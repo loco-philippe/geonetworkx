@@ -18,5 +18,5 @@ For more information, see the
 or the [github repository](https://github.com/loco-philippe/tab-analysis).
 """
 
-# from tab_analysis.analysis import AnaField as AnaField
+from geonetworkx.geograph import GeoGraph as GeoGraph
 # from tab_analysis.analysis import MIXED as MIXED
