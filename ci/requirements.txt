@@ -1,0 +1,10 @@
+pandas
+geopandas
+
+shapely
+matplotlib
+folium
+
+flake8
+pdoc
+tabulate
