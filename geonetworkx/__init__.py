@@ -19,4 +19,5 @@ or the [github repository](https://github.com/loco-philippe/tab-analysis).
 """
 
 from geonetworkx.geograph import GeoGraph as GeoGraph
+from geonetworkx.convert import from_geopandas_edgelist as from_geopandas_edgelist
 # from tab_analysis.analysis import MIXED as MIXED
