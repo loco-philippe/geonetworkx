@@ -22,5 +22,5 @@ from geonetworkx.geograph import GeoGraph as GeoGraph
 from geonetworkx.convert import from_geopandas_edgelist
 from geonetworkx.convert import to_geopandas_edgelist
 from geonetworkx.convert import to_geopandas_nodelist
-from geonetworkx.utils import find_edge, geom_to_crs
+from geonetworkx.utils import geom_to_crs
 # from tab_analysis.analysis import MIXED as MIXED

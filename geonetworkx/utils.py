@@ -35,16 +35,6 @@ def geo_cut(line, geom, adjust=False):
             return [LineString(coords[:ind] + [new_c]), LineString([new_c] + coords[ind:]), dist]
     return None
 
-def find_edge(graph, geom, max_distance): 
-
-    gdf_pt = gpd.GeoDataFrame({'geometry':[geom.centroid]}, crs=graph.graph['crs'])
-    gdf_ed = graph.to_geopandas_edgelist()
-    #print(gdf_ed)
-    troncons = gdf_pt.sjoin_nearest(gdf_ed, max_distance=max_distance, distance_col='weight')
-    if len(troncons):
-        troncon = troncons.sort_values(by='weight').iloc[0]
-        return [int(troncon['source']), int(troncon['target'])]
-    return None
-
 def geom_to_crs(geom, crs, new_crs):
     return gpd.GeoSeries([geom], crs=crs).to_crs(new_crs)[0]
+

@@ -35,31 +35,28 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
             new_edge_attr = list(set(edge_attr + [geom, weight]))
         case _:
             new_edge_attr = [geom, weight, edge_attr]
-            
-    '''if isinstance(edge_attr, list | tuple):
-        edge_attr += [geom, weight]
-    elif edge_attr:
-        edge_attr = [geom, weight, edge_attr]'''
         
     if geom in n_gdf and not geom in e_gdf:
+        crs = n_gdf.crs.to_epsg()
         e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, geom)], how='left', left_on=source, right_on=node_id).rename(columns={geom:'geom_source'})
         e_gdf.pop(node_id) 
         e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, geom)], how='left', left_on=target, right_on=node_id).rename(columns={geom:'geom_target'})
         e_gdf.pop(node_id) 
         # e_gdfons['geometry'] = pd.Series([LineString([row[3], row[4]]) for row in e_gdf.itertuples()])
-        geo_e_gdf = gpd.GeoDataFrame(edge_gdf, geometry = gpd.GeoSeries(e_gdf['geom_source']).shortest_line(gpd.GeoSeries(e_gdf['geom_target'])))
+        geo_e_gdf = gpd.GeoDataFrame(edge_gdf, geometry = gpd.GeoSeries(e_gdf['geom_source']).shortest_line(gpd.GeoSeries(e_gdf['geom_target'])), crs=crs)
     
     geo_e_gdf[weight] = geo_e_gdf[geom].length
     geo_gr = nx.from_pandas_edgelist(geo_e_gdf, edge_attr=new_edge_attr)
     
     if n_gdf_ok: 
         dic = n_gdf.to_dict(orient='records')
-        #nx_dic = {row[node_id]: dict(item for item in row.items() if item[0] != node_id) for row in dic}
-        nx_dic = {row[node_id]: dict(item for item in row.items()) for row in dic}
+        nx_dic = {row[node_id]: dict(item for item in row.items() if item[0] != node_id) for row in dic}
+        #nx_dic = {row[node_id]: dict(item for item in row.items()) for row in dic}
         nx.set_node_attributes(geo_gr, nx_dic)
 
     crs = geo_e_gdf.crs if geo_e_gdf.crs else (node_gdf.crs if n_gdf_ok else None)
     geo_gr.graph['crs'] = crs.to_epsg()     
+    print(geo_gr.graph, GeoGraph(geo_gr).graph)
     return GeoGraph(geo_gr)
 
 def to_geopandas_edgelist(graph, source='source', target='target', nodelist=None):
@@ -109,6 +106,7 @@ def to_geopandas_nodelist(graph, node_id='node_id', nodelist=None):
        Graph node list.
     """    
     nodes = pd.DataFrame.from_records(np.array(graph.nodes.data())[:,1])
+    nodes[node_id]= pd.Series(list(graph.nodes))
     if nodelist:
         nodes = nodes.set_index(node_id).loc[nodelist].reset_index()
     return gpd.GeoDataFrame(nodes, crs=graph.graph['crs'])
