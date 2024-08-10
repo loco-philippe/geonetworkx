@@ -7,8 +7,9 @@ import numpy as np
 import geopandas as gpd
 import folium
 import networkx as nx
+import geonetworkx as gnx
 import matplotlib.pyplot as plt
-from geonetworkx.geograph import GeoGraph
+#from geonetworkx.geograph import GeoGraph
 
 def from_geopandas_edgelist(edge_gdf, source='source', target='target', 
                             edge_attr=None, node_gdf=None, node_id='node_id', node_attr=None):
@@ -56,8 +57,8 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
 
     crs = geo_e_gdf.crs if geo_e_gdf.crs else (node_gdf.crs if n_gdf_ok else None)
     geo_gr.graph['crs'] = crs.to_epsg()     
-    print(geo_gr.graph, GeoGraph(geo_gr).graph)
-    return GeoGraph(geo_gr)
+    print(geo_gr.graph, gnx.GeoGraph(geo_gr).graph)
+    return gnx.GeoGraph(geo_gr)
 
 def to_geopandas_edgelist(graph, source='source', target='target', nodelist=None):
     """Returns the graph edge list as a GeoDataFrame.

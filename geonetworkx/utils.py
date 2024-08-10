@@ -38,3 +38,10 @@ def geo_cut(line, geom, adjust=False):
 def geom_to_crs(geom, crs, new_crs):
     return gpd.GeoSeries([geom], crs=crs).to_crs(new_crs)[0]
 
+def cast_id(node_id):
+    if hasattr(node_id, '__iter__') and not isinstance(node_id, str): 
+        return list(n_id for n_id in node_id if isinstance(n_id, int))
+    try:
+        return int(node_id)
+    except:
+        return node_id

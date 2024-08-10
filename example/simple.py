@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import shapely
 from shapely import LineString, Point
-import pandas as pd
 import numpy as np
 import geopandas as gpd
-import folium
 import geonetworkx as gnx
 from geonetworkx import geom_to_crs
-import matplotlib.pyplot as plt
 
 paris = Point(2.3514, 48.8575)
 lyon = Point(4.8357, 45.7640)

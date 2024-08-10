@@ -13,7 +13,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from geonetworkx.convert import to_geopandas_edgelist
 from geonetworkx.convert import to_geopandas_nodelist
-from geonetworkx.utils import geo_cut
+from geonetworkx.utils import geo_cut, cast_id
 
 class GeoGraph(nx.Graph):
     """This class analyses geographic graphs.
@@ -130,7 +130,19 @@ class GeoGraph(nx.Graph):
         troncons = gdf_pt.sjoin_nearest(gdf_ed, max_distance=max_distance, distance_col='weight')
         if len(troncons):
             troncon = troncons.sort_values(by='weight').iloc[0]
-            return [int(troncon['source']), int(troncon['target'])]
+            
+            return [cast_id(troncon['source']), cast_id(troncon['target'])]
+        return None
+
+    def find_node(self, geom, max_distance): 
+    
+        gdf_pt = gpd.GeoDataFrame({'geometry':[geom.centroid]}, crs=self.graph['crs'])
+        gdf_no = self.to_geopandas_nodelist()
+        #print(gdf_no)
+        noeuds = gdf_pt.sjoin_nearest(gdf_no, max_distance=max_distance, distance_col='weight')
+        if len(noeuds):
+            noeud = noeuds.sort_values(by='weight').iloc[0]
+            return cast_id(noeud['node_id'])
         return None
         
 class GeoGraphError(Exception):
