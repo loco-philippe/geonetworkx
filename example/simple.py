@@ -22,7 +22,7 @@ nd = np.array([[1, 'paris', paris],
                [3, 'marseille', marseille],
                [4, 'bordeaux', bordeaux],
                [5, 'toulouse', toulouse]])
-noeuds = gpd.GeoDataFrame({'node_id': nd[:, 0], 'city': nd[:, 1], 'geometry': nd[:, 2]}, 
+noeuds = gpd.GeoDataFrame({'node_id': nd[:, 0], 'city': nd[:, 1], 'geometry': nd[:, 2], 'type': 'noeud'}, 
                           crs=4326).to_crs(2154)
 
 tr = np.array([[1, 2], [2, 3], [1, 4], [4, 5]])
@@ -49,3 +49,15 @@ carte = gr.explore(**param_exp)
 carte.save('test2.html')
 print(gr.to_geopandas_edgelist())
 print(gr.to_geopandas_nodelist())
+
+stat1 = Point(844000, 6318000)
+dis1 = stat1.distance(avi_2154)
+geo1 = LineString([avi_2154, stat1])
+gr.add_node('st01', **{'geometry': stat1, 'type': 'irve'})
+gr.nodes[6]['type'] = 'station'
+gr.add_edge(6, 'st01', **{'geometry':geo1, 'weight': dis1, 'type': 'st_irve'})
+carte = gr.explore(**param_exp)
+carte.save('test2.html')
+print(gr.to_geopandas_edgelist())
+print(gr.to_geopandas_nodelist())
+
