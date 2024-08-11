@@ -101,16 +101,17 @@ class GeoGraph(nx.Graph):
 
     def explore(self, carte=None, edges=True, nodes=True, **expparam): 
         expparam = {'e_name': 'edges', 'n_name': 'nodes',
-                    'e_popup': ['weight'], 'n_popup': [],
-                    'e_tooltip': [], 'n_tooltip': [], 
+                    'e_popup': ['weight'], 'n_popup': None,
+                    'e_tooltip': None, 'n_tooltip': None, 
                     'e_color': 'blue', 'n_color': 'red',
-                    'n_marker_kwds': {'radius': 5, 'fill': True}} | expparam
-        edgeparam = dict((k[2:], v) for k, v in expparam.items() if k[:2] == 'e_')
-        nodeparam = dict((k[2:], v) for k, v in expparam.items() if k[:2] == 'n_')
+                    'n_marker_kwds': {'radius': 5, 'fill': True},
+                    'layer': False} | expparam
+        edgeparam = dict((k[2:], v) for k, v in expparam.items() if k[:2] == 'e_' and v)
+        nodeparam = dict((k[2:], v) for k, v in expparam.items() if k[:2] == 'n_' and v)
 
         if edges:
             if carte:
-                self.to_geopandas_nodelist().explore(m=carte, **edgeparam)
+                self.to_geopandas_edgelist().explore(m=carte, **edgeparam)
             else:
                 carte = self.to_geopandas_edgelist().explore(**edgeparam)
         if nodes:
@@ -119,7 +120,8 @@ class GeoGraph(nx.Graph):
             else:
                 carte = self.to_geopandas_nodelist().explore(**nodeparam)
         folium.TileLayer("CartoDB positron", show=True).add_to(carte)
-        folium.LayerControl().add_to(carte)
+        if expparam['layer']:
+            folium.LayerControl().add_to(carte)
         return carte
 
     def find_edge(self, geom, max_distance): 

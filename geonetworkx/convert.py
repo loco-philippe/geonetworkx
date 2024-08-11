@@ -57,7 +57,7 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
 
     crs = geo_e_gdf.crs if geo_e_gdf.crs else (node_gdf.crs if n_gdf_ok else None)
     geo_gr.graph['crs'] = crs.to_epsg()     
-    print(geo_gr.graph, gnx.GeoGraph(geo_gr).graph)
+    # print(geo_gr.graph, gnx.GeoGraph(geo_gr).graph)
     return gnx.GeoGraph(geo_gr)
 
 def to_geopandas_edgelist(graph, source='source', target='target', nodelist=None):
