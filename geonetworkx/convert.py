@@ -11,6 +11,29 @@ import geonetworkx as gnx
 import matplotlib.pyplot as plt
 #from geonetworkx.geograph import GeoGraph
 
+def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
+    geom = 'geometry'
+    match node_attr:
+        case None: 
+            new_edge_attr = [geom]
+        case True: 
+            new_edge_attr = edge_attr
+        case list() | tuple():
+            new_edge_attr = list(set(edge_attr + [geom]))
+        case _:
+            new_edge_attr = [geom, edge_attr]    
+    dic = node_gdf.loc[:, new_edge_attr].to_dict(orient='records')
+    if not node_id:
+        nx_dic = {idx: dict(item for item in row.items()) for idx, row in enumerate(dic)}
+    else:    
+        nx_dic = {row[node_id]: dict(item for item in row.items() if item[0] != node_id) for row in dic}
+    geo_gr = nx.empty_graph(len(node_gdf))
+    nx.set_node_attributes(geo_gr, nx_dic)
+
+    crs = node_gdf.crs
+    geo_gr.graph['crs'] = crs.to_epsg()     
+    return gnx.GeoGraph(geo_gr)    
+
 def from_geopandas_edgelist(edge_gdf, source='source', target='target', 
                             edge_attr=None, node_gdf=None, node_id='node_id', node_attr=None):
     '''Returns a GeoGraph from GeoDataFrame containing an edge list.
@@ -36,26 +59,34 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
             new_edge_attr = list(set(edge_attr + [geom, weight]))
         case _:
             new_edge_attr = [geom, weight, edge_attr]
-        
-    if geom in n_gdf and not geom in e_gdf:
+    if n_gdf_ok and geom in n_gdf and not geom in e_gdf:
         crs = n_gdf.crs.to_epsg()
         e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, geom)], how='left', left_on=source, right_on=node_id).rename(columns={geom:'geom_source'})
         e_gdf.pop(node_id) 
         e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, geom)], how='left', left_on=target, right_on=node_id).rename(columns={geom:'geom_target'})
         e_gdf.pop(node_id) 
         # e_gdfons['geometry'] = pd.Series([LineString([row[3], row[4]]) for row in e_gdf.itertuples()])
-        geo_e_gdf = gpd.GeoDataFrame(edge_gdf, geometry = gpd.GeoSeries(e_gdf['geom_source']).shortest_line(gpd.GeoSeries(e_gdf['geom_target'])), crs=crs)
+        e_gdf = gpd.GeoDataFrame(edge_gdf, geometry = gpd.GeoSeries(e_gdf['geom_source']).shortest_line(gpd.GeoSeries(e_gdf['geom_target'])), crs=crs)
+    elif not n_gdf_ok:
+        crs = e_gdf.crs.to_epsg()
+        e_gdf["source_geo"] = e_gdf["geometry"].apply(lambda ls: ls.boundary.geoms[0])
+        e_gdf["target_geo"] = e_gdf["geometry"].apply(lambda ls: ls.boundary.geoms[1])
+        n_gdf = pd.concat([e_gdf["source_geo"], e_gdf["target_geo"]]).drop_duplicates().reset_index(drop=True)
+        nodidx = pd.Series(n_gdf.index, index=n_gdf)
+        e_gdf = e_gdf.join(nodidx.rename(source), on="source_geo")
+        e_gdf = e_gdf.join(nodidx.rename(target), on="target_geo")
+        del e_gdf["source_geo"]
+        del e_gdf["target_geo"]
+        n_gdf = gpd.GeoDataFrame({geom: n_gdf, node_id: n_gdf.index}, crs=crs)
     
-    geo_e_gdf[weight] = geo_e_gdf[geom].length
-    geo_gr = nx.from_pandas_edgelist(geo_e_gdf, edge_attr=new_edge_attr)
+    e_gdf[weight] = e_gdf[geom].length
+    geo_gr = nx.from_pandas_edgelist(e_gdf, edge_attr=new_edge_attr)
     
-    if n_gdf_ok: 
-        dic = n_gdf.to_dict(orient='records')
-        nx_dic = {row[node_id]: dict(item for item in row.items() if item[0] != node_id) for row in dic}
-        #nx_dic = {row[node_id]: dict(item for item in row.items()) for row in dic}
-        nx.set_node_attributes(geo_gr, nx_dic)
+    dic = n_gdf.to_dict(orient='records')
+    nx_dic = {row[node_id]: dict(item for item in row.items() if item[0] != node_id) for row in dic}
+    nx.set_node_attributes(geo_gr, nx_dic)
 
-    crs = geo_e_gdf.crs if geo_e_gdf.crs else (node_gdf.crs if n_gdf_ok else None)
+    crs = e_gdf.crs if e_gdf.crs else (n_gdf.crs if n_gdf_ok else None)
     geo_gr.graph['crs'] = crs.to_epsg()     
     # print(geo_gr.graph, gnx.GeoGraph(geo_gr).graph)
     return gnx.GeoGraph(geo_gr)
