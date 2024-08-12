@@ -69,7 +69,7 @@ class GeoGraph(nx.Graph):
         if not new_geo:
             return None
         geo1, geo2, intersect, dist = new_geo
-        print(intersect) 
+        # print(intersect) 
         self.add_node(id_node, **(att_node | {'geometry': intersect}))
         self.add_edge(id_edge[0], id_node, **(att_edge | {'geometry': geo1, 'weight': geo1.length}))
         self.add_edge(id_node, id_edge[1], **(att_edge | {'geometry': geo2, 'weight': geo2.length}))
