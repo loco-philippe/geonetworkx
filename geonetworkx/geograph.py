@@ -99,7 +99,7 @@ class GeoGraph(nx.Graph):
             self.to_geopandas_nodelist().plot(ax=ax, **nodeparam)
         plt.show()
 
-    def explore(self, carte=None, edges=True, nodes=True, **expparam): 
+    def explore(self, carte=None, edges=True, nodes=True, nodelist=None, **expparam): 
         expparam = {'e_name': 'edges', 'n_name': 'nodes',
                     'e_popup': ['weight'], 'n_popup': None,
                     'e_tooltip': None, 'n_tooltip': None, 
@@ -111,14 +111,14 @@ class GeoGraph(nx.Graph):
 
         if edges:
             if carte:
-                self.to_geopandas_edgelist().explore(m=carte, **edgeparam)
+                self.to_geopandas_edgelist(nodelist=nodelist).explore(m=carte, **edgeparam)
             else:
-                carte = self.to_geopandas_edgelist().explore(**edgeparam)
+                carte = self.to_geopandas_edgelist(nodelist=nodelist).explore(**edgeparam)
         if nodes:
             if carte:
-                self.to_geopandas_nodelist().explore(m=carte, **nodeparam)
+                self.to_geopandas_nodelist(nodelist=nodelist).explore(m=carte, **nodeparam)
             else:
-                carte = self.to_geopandas_nodelist().explore(**nodeparam)
+                carte = self.to_geopandas_nodelist(nodelist=nodelist).explore(**nodeparam)
         folium.TileLayer("CartoDB positron", show=True).add_to(carte)
         if expparam['layer']:
             folium.LayerControl().add_to(carte)
