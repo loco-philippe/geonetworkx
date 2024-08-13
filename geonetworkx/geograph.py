@@ -124,6 +124,14 @@ class GeoGraph(nx.Graph):
             folium.LayerControl().add_to(carte)
         return carte
 
+    def path_view(self, nodelist):
+
+        def filter_node(node):
+            return node in nodelist
+        def filter_edge(node1, node2):
+            return node1 in nodelist and node2 in nodelist
+        return nx.subgraph_view(self, filter_node=filter_node, filter_edge=filter_edge)
+
     def find_edge(self, geom, max_distance): 
     
         gdf_pt = gpd.GeoDataFrame({'geometry':[geom.centroid]}, crs=self.graph['crs'])
