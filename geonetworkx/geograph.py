@@ -63,16 +63,22 @@ class GeoGraph(nx.Graph):
             self.graph['crs'] = None
 
     def insert_node(self, geom, id_node, id_edge, att_node={}, adjust=False):
-    
+        # prt = id_node in [810, 811, 812]
         att_edge = self.edges[*id_edge]
         new_geo = geo_cut(att_edge['geometry'], geom, adjust=adjust)
         if not new_geo:
             return None
+        #if prt:
+        #    print('id_node, id_edge, new_geo : ', id_node, id_edge, new_geo)
         geo1, geo2, intersect, dist = new_geo
         # print(intersect) 
         self.add_node(id_node, **(att_node | {'geometry': intersect}))
+        
         self.add_edge(id_edge[0], id_node, **(att_edge | {'geometry': geo1, 'weight': geo1.length}))
         self.add_edge(id_node, id_edge[1], **(att_edge | {'geometry': geo2, 'weight': geo2.length}))
+        #if prt:
+        #    print('    edge1, newedge : ', id_edge[0], id_node, geo1)                
+        #    print('    newedge, edge2 : ', id_node, id_edge[1], geo2)                
         self.remove_edge(*id_edge)
         return dist
         
