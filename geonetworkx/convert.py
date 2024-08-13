@@ -15,14 +15,14 @@ def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
     geom = 'geometry'
     match node_attr:
         case None: 
-            new_edge_attr = [geom]
+            new_node_attr = [geom]
         case True: 
-            new_edge_attr = edge_attr
+            new_node_attr = node_attr
         case list() | tuple():
-            new_edge_attr = list(set(edge_attr + [geom]))
+            new_node_attr = list(set(node_attr + [geom]))
         case _:
-            new_edge_attr = [geom, edge_attr]    
-    dic = node_gdf.loc[:, new_edge_attr].to_dict(orient='records')
+            new_node_attr = [geom, node_attr]    
+    dic = node_gdf.loc[:, new_node_attr].to_dict(orient='records')
     if not node_id:
         nx_dic = {idx: dict(item for item in row.items()) for idx, row in enumerate(dic)}
     else:    
