@@ -23,7 +23,7 @@ def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
         case _:
             new_node_attr = [geom, node_attr]    
     dic = node_gdf.loc[:, new_node_attr].to_dict(orient='records')
-    if not node_id:
+    '''if not node_id:
         nx_dic = {idx: dict(item for item in row.items()) for idx, row in enumerate(dic)}
     else:    
         nx_dic = {row[node_id]: dict(item for item in row.items() if item[0] != node_id) for row in dic}
@@ -32,7 +32,13 @@ def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
 
     crs = node_gdf.crs
     geo_gr.graph['crs'] = crs.to_epsg()     
-    return gnx.GeoGraph(geo_gr)    
+    return gnx.GeoGraph(geo_gr)    '''
+    if not node_id:
+        nx_lis = [(idx, dict(item for item in row.items())) for idx, row in enumerate(dic)]
+    else:    
+        nx_lis = [(row[node_id], dict(item for item in row.items() if item[0] != node_id)) for row in dic]
+    geo_gr = nx.empty_graph(nx_lis)
+    return gnx.GeoGraph(geo_gr, crs=node_gdf.crs)
 
 def from_geopandas_edgelist(edge_gdf, source='source', target='target', 
                             edge_attr=None, node_gdf=None, node_id='node_id', node_attr=None):
