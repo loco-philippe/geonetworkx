@@ -77,25 +77,51 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
         crs = e_gdf.crs.to_epsg()
         e_gdf["source_geo"] = e_gdf["geometry"].apply(lambda ls: ls.boundary.geoms[0])
         e_gdf["target_geo"] = e_gdf["geometry"].apply(lambda ls: ls.boundary.geoms[1])
-        n_gdf = pd.concat([e_gdf["source_geo"], e_gdf["target_geo"]]).drop_duplicates().reset_index(drop=True)
-        nodidx = pd.Series(n_gdf.index, index=n_gdf)
-        e_gdf = e_gdf.join(nodidx.rename(source), on="source_geo")
-        e_gdf = e_gdf.join(nodidx.rename(target), on="target_geo")
-        del e_gdf["source_geo"]
-        del e_gdf["target_geo"]
-        n_gdf = gpd.GeoDataFrame({geom: n_gdf, node_id: n_gdf.index}, crs=crs)
-    
+        
+        '''n_gdf = pd.concat([e_gdf["source_geo"], e_gdf["target_geo"]]).drop_duplicates().reset_index(drop=True)
+        nodidx =pd.Series(n_gdf.index, index=n_gdf)
+        # print(nodidx)
+        # print(e_gdf['source_geo'])
+        e_gdf = e_gdf.join(nodidx.rename(source), on="source_geo", how='left', rsuffix='_right')
+        e_gdf = e_gdf.join(nodidx.rename(target), on="target_geo", how='left', rsuffix='_right')
+        del e_gdf["source_geo"], e_gdf["target_geo"], e_gdf["source_right"], e_gdf["target_right"] 
+        # print(e_gdf.columns)
+        n_gdf = gpd.GeoDataFrame({geom: n_gdf, node_id: n_gdf.index}, crs=crs)'''
+        if source in e_gdf.columns:
+            e_gdf_source = e_gdf.loc[:,[source, "source_geo"]].rename(columns={source: node_id, "source_geo": geom})
+            e_gdf_target = e_gdf.loc[:,[target, "target_geo"]].rename(columns={target: node_id, "target_geo": geom})
+            n_gdf = pd.concat([e_gdf_source, e_gdf_target]).drop_duplicates()
+        else:
+            n_gdf = pd.concat([e_gdf["source_geo"], e_gdf["target_geo"]]).drop_duplicates().reset_index(drop=True)
+            nodidx =pd.Series(n_gdf.index, index=n_gdf)
+            e_gdf = e_gdf.join(nodidx.rename(source), on="source_geo", how='left')
+            e_gdf = e_gdf.join(nodidx.rename(target), on="target_geo", how='left')
+            n_gdf = gpd.GeoDataFrame({geom: n_gdf, node_id: n_gdf.index}, crs=crs)
+        del e_gdf["source_geo"], e_gdf["target_geo"]
+            
     e_gdf[weight] = e_gdf[geom].length
     geo_gr = nx.from_pandas_edgelist(e_gdf, edge_attr=new_edge_attr)
-    
+    #print(n_gdf)
     dic = n_gdf.to_dict(orient='records')
+    #print(dic)
     nx_dic = {row[node_id]: dict(item for item in row.items() if item[0] != node_id) for row in dic}
+    #print(nx_dic)
+    #print(geo_gr.nodes)
+    
     nx.set_node_attributes(geo_gr, nx_dic)
 
     crs = e_gdf.crs if e_gdf.crs else (n_gdf.crs if n_gdf_ok else None)
     geo_gr.graph['crs'] = crs.to_epsg()     
     # print(geo_gr.graph, gnx.GeoGraph(geo_gr).graph)
     return gnx.GeoGraph(geo_gr)
+
+'''
+        e_gdf_source = e_gdf.loc[:,["source", "source_geo"]].rename(columns={"source": "id_node", "source_geo": "geometry"})
+        e_gdf_target = e_gdf.loc[:,["target", "target_geo"]].rename(columns={"target": "id_node", "target_geo": "geometry"})
+        n_gdf = pd.concat([e_gdf_source, e_gdf_target]).drop_duplicates()
+        
+        del e_gdf["source_geo"], e_gdf["target_geo"]
+'''
 
 def to_geopandas_edgelist(graph, source='source', target='target', nodelist=None):
     """Returns the graph edge list as a GeoDataFrame.
