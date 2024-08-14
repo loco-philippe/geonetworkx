@@ -70,9 +70,14 @@ class GeoGraph(nx.Graph):
             return None
         geo1, geo2, intersect, dist = new_geo
         # print(intersect) 
+        edg_0 = self.nodes[id_edge[0]]['geometry'].coords[0]
+        first = id_edge[0] if edg_0 == geo1.coords[0] else id_edge[1]
+        last = id_edge[1] if first == id_edge[0] else id_edge[0]
         self.add_node(id_node, **(att_node | {'geometry': intersect}))
-        self.add_edge(id_edge[0], id_node, **(att_edge | {'geometry': geo1, 'weight': geo1.length}))
-        self.add_edge(id_node, id_edge[1], **(att_edge | {'geometry': geo2, 'weight': geo2.length}))
+        # self.add_edge(id_edge[0], id_node, **(att_edge | {'geometry': geo1, 'weight': geo1.length}))
+        # self.add_edge(id_node, id_edge[1], **(att_edge | {'geometry': geo2, 'weight': geo2.length}))
+        self.add_edge(first, id_node, **(att_edge | {'geometry': geo1, 'weight': geo1.length}))
+        self.add_edge(id_node, last, **(att_edge | {'geometry': geo2, 'weight': geo2.length}))
         self.remove_edge(*id_edge)
         return dist
         
@@ -99,7 +104,9 @@ class GeoGraph(nx.Graph):
             self.to_geopandas_nodelist().plot(ax=ax, **nodeparam)
         plt.show()
 
-    def explore(self, carte=None, edges=True, nodes=True, nodelist=None, **expparam): 
+    def explore(self, refmap=None, edges=True, nodes=True, nodelist=None, 
+                layercontrol=False, **expparam): 
+        
         expparam = {'e_name': 'edges', 'n_name': 'nodes',
                     'e_popup': ['weight'], 'n_popup': None,
                     'e_tooltip': None, 'n_tooltip': None, 
@@ -108,21 +115,23 @@ class GeoGraph(nx.Graph):
                     'layer': False} | expparam
         edgeparam = dict((k[2:], v) for k, v in expparam.items() if k[:2] == 'e_' and v)
         nodeparam = dict((k[2:], v) for k, v in expparam.items() if k[:2] == 'n_' and v)
-
+        
+        if isinstance(refmap, dict):
+            refmap = folium.Map(**refmap)
+        
         if edges:
-            if carte:
-                self.to_geopandas_edgelist(nodelist=nodelist).explore(m=carte, **edgeparam)
+            if refmap:
+                self.to_geopandas_edgelist(nodelist=nodelist).explore(m=refmap, **edgeparam)
             else:
-                carte = self.to_geopandas_edgelist(nodelist=nodelist).explore(**edgeparam)
+                refmap = self.to_geopandas_edgelist(nodelist=nodelist).explore(**edgeparam)
         if nodes:
-            if carte:
-                self.to_geopandas_nodelist(nodelist=nodelist).explore(m=carte, **nodeparam)
+            if refmap:
+                self.to_geopandas_nodelist(nodelist=nodelist).explore(m=refmap, **nodeparam)
             else:
-                carte = self.to_geopandas_nodelist(nodelist=nodelist).explore(**nodeparam)
-        folium.TileLayer("CartoDB positron", show=True).add_to(carte)
-        if expparam['layer']:
-            folium.LayerControl().add_to(carte)
-        return carte
+                refmap = self.to_geopandas_nodelist(nodelist=nodelist).explore(**nodeparam)
+        if layercontrol:
+            folium.LayerControl().add_to(refmap)
+        return refmap
 
     def path_view(self, nodelist):
 
