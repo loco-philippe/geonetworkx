@@ -13,16 +13,24 @@ import networkx as nx
 def geo_cut(line, geom, adjust=False):
     ''' Cuts a line in two at the geometry nearest projection point 
     
-    - line: LineString or LinearRing to cut
-    - geom: geometry to be projected on the line
-    - adjust: boolean - if True the new point is the geometry's centroid else the projected line point
+    Parameters
+    ----------
+        
+    - line: shapely LineString or LinearRing
+        Line to cut.
+    - geom: shapely geometry
+        Geometry to be projected on the line (centroid projection).
+    - adjust: boolean
+        If True, the new point is the geometry's centroid else the projected line point
     
-    return 
-
-    - first geometry
-    - second geometry
-    - intersected point
-    - line coordinatefor intersected point'''
+    Returns
+    -------
+    - tuple (four values)
+        - first geometry (shapely LineString)
+        - second geometry (shapely LineString)
+        - intersected point (shapely Point)
+        - line coordinate for intersected point (float)
+    '''
     line = LineString(line)
     point = geom.centroid
     absc = line.project(point)

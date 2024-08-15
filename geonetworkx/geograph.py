@@ -16,69 +16,85 @@ from geonetworkx.convert import to_geopandas_nodelist
 from geonetworkx.utils import geo_cut, cast_id
 
 class GeoGraph(nx.Graph):
-    """This class analyses geographic graphs.
-
-    *Attributes*
-
-    - **crs** : string or integer - Coordinate Reference System used
-
-    *characteristic (@property)*
-
-    - `iscomplete`
-    - `ratecodec`
-    - `dmincodec`
-    - `dmaxcodec`
-    - `rancodec`
-    - `typecodec`
+    """This class analyses geospatial graphs.
+    A geospatial graph is a graph where nodes and edges are related to a geometry.
+    A GeoGraph is a NetworkX Graph with a shapely geometry as egde attribute and node attribute.
+    The GeoGraph 'crs' attribute defines the coordinate reference used.  
 
     *instance methods*
 
-    - `to_dict`
+    - `insert_node`
+    - `to_geopandas_edgelist`
+    - `to_geopandas_nodelist`
+    - `plot`
+    - `explore`
+    - `path_view`
+    - `find_edge`
+    - `find_node`
 
     """
 
     def __init__(self, incoming_graph_data=None, **attr):
-        """Creation mode :
+        """The initialization of a GeoGraph is identical to a Graph initialization.
+        (with the addition of the creation of a 'crs' attribute - default : None).
+        
+        The 'geometry' attribute is mandatory for the GeoGraph methods (eg. to_geopandas_edgelist)
 
-        *Parameters (multiple attributes)*
-
-        - **idfield** : string or integer - Id of the Field
-
-        *example*
-
-        AnaField is created with a dict
-        >>> AnaField(Cfield([1,2,3,3]).to_analysis).to_dict()
-        {'lencodec': 4, 'mincodec': 3, 'maxcodec': 4}
-        >>> AnaField({'lencodec': 4, 'mincodec': 3, 'maxcodec': 4})
-        {'lencodec': 4, 'mincodec': 3, 'maxcodec': 4}
-
-        AnaField is created with parameters
-        >>> AnaField(lencodec=4, mincodec=3, maxcodec=4).to_dict()
-        {'lencodec': 4, 'mincodec': 3, 'maxcodec': 4}
-        >>> AnaField(4, 3, 4).to_dict()
-        {'lencodec': 4, 'mincodec': 3, 'maxcodec': 4}
+        Examples
+        --------
+        Create an empty graph structure (a "null graph") with no nodes and no edges.
+        
+        >>> G = nx.Graph()
         """
         super().__init__(incoming_graph_data, **attr)
         if 'crs' not in self.graph:
             self.graph['crs'] = None
 
     def insert_node(self, geom, id_node, id_edge, att_node={}, adjust=False):
-    
+        """The insert_node method cut an edge in two edges and insert a new node between each.
+        The 'geometry' attribute of the two edges and the new node is build from the geometry of 
+        the initial edge and the parameter geometry.
+        
+        Parameters
+        ----------
+            
+        - id_node: id
+            Id of the inserted node.
+        - att_node: dict
+            Attributes of the inserted node.
+        - id_edge: tuple of two id_node
+            Id of the cuted edge.
+        - geom: shapely geometry
+            Geometry to be projected on the edge line (centroid projection).
+        - adjust: boolean
+            If True, the new point is the geometry's centroid else the projected line point     
+            
+        Returns
+        -------
+        
+        dist: float
+            Abcissa of the new node in the cuted edge geometry.
+            
+        Note
+        ----
+        
+        This method is available only with LineString as edge geometry.
+        """
         att_edge = self.edges[*id_edge]
         new_geo = geo_cut(att_edge['geometry'], geom, adjust=adjust)
         if not new_geo:
             return None
         geo1, geo2, intersect, dist = new_geo
-        # print(intersect) 
+        
         edg_0 = self.nodes[id_edge[0]]['geometry'].coords[0]
         first = id_edge[0] if edg_0 == geo1.coords[0] else id_edge[1]
         last = id_edge[1] if first == id_edge[0] else id_edge[0]
+        
         self.add_node(id_node, **(att_node | {'geometry': intersect}))
-        # self.add_edge(id_edge[0], id_node, **(att_edge | {'geometry': geo1, 'weight': geo1.length}))
-        # self.add_edge(id_node, id_edge[1], **(att_edge | {'geometry': geo2, 'weight': geo2.length}))
         self.add_edge(first, id_node, **(att_edge | {'geometry': geo1, 'weight': geo1.length}))
         self.add_edge(id_node, last, **(att_edge | {'geometry': geo2, 'weight': geo2.length}))
         self.remove_edge(*id_edge)
+        
         return dist
         
     def to_geopandas_edgelist(self, source='source', target='target', nodelist=None):
