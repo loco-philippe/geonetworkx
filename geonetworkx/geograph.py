@@ -110,9 +110,8 @@ class GeoGraph(nx.Graph):
         expparam = {'e_name': 'edges', 'n_name': 'nodes',
                     'e_popup': ['weight'], 'n_popup': None,
                     'e_tooltip': None, 'n_tooltip': None, 
-                    'e_color': 'blue', 'n_color': 'red',
-                    'n_marker_kwds': {'radius': 5, 'fill': True},
-                    'layer': False} | expparam
+                    'e_color': 'blue', 'n_color': 'black',
+                    'n_marker_kwds': {'radius': 2, 'fill': True}}   | expparam
         edgeparam = dict((k[2:], v) for k, v in expparam.items() if k[:2] == 'e_' and v)
         nodeparam = dict((k[2:], v) for k, v in expparam.items() if k[:2] == 'n_' and v)
         
