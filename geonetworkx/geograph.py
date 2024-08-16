@@ -28,9 +28,8 @@ class GeoGraph(nx.Graph):
     - `to_geopandas_nodelist`
     - `plot`
     - `explore`
-    - `path_view`
-    - `find_edge`
-    - `find_node`
+    - `find_nearest_edge`
+    - `find_nearest_node`
 
     """
 
@@ -183,15 +182,8 @@ class GeoGraph(nx.Graph):
             folium.LayerControl().add_to(refmap)
         return refmap
 
-    def path_view(self, nodelist):
 
-        def filter_node(node):
-            return node in nodelist
-        def filter_edge(node1, node2):
-            return node1 in nodelist and node2 in nodelist
-        return nx.subgraph_view(self, filter_node=filter_node, filter_edge=filter_edge)
-
-    def find_edge(self, geom, max_distance): 
+    def find_nearest_edge(self, geom, max_distance): 
     
         gdf_pt = gpd.GeoDataFrame({'geometry':[geom.centroid]}, crs=self.graph['crs'])
         gdf_ed = self.to_geopandas_edgelist()
@@ -203,7 +195,7 @@ class GeoGraph(nx.Graph):
             return [cast_id(troncon['source']), cast_id(troncon['target'])]
         return None
 
-    def find_node(self, geom, max_distance): 
+    def find_nearest_node(self, geom, max_distance): 
     
         gdf_pt = gpd.GeoDataFrame({'geometry':[geom.centroid]}, crs=self.graph['crs'])
         gdf_no = self.to_geopandas_nodelist()
