@@ -1,38 +1,23 @@
 # -*- coding: utf-8 -*-
 
-import shapely
-from shapely import LineString, Point
 import pandas as pd
 import numpy as np
 import geopandas as gpd
-import folium
 import networkx as nx
 import geonetworkx as gnx
-import matplotlib.pyplot as plt
-#from geonetworkx.geograph import GeoGraph
 
 def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
     geom = 'geometry'
     match node_attr:
-        case None: 
-            new_node_attr = [geom]
         case True: 
             new_node_attr = node_attr
         case list() | tuple():
             new_node_attr = list(set(node_attr + [geom]))
-        case _:
+        case str():
             new_node_attr = [geom, node_attr]    
+        case _: 
+            new_node_attr = [geom]
     dic = node_gdf.loc[:, new_node_attr].to_dict(orient='records')
-    '''if not node_id:
-        nx_dic = {idx: dict(item for item in row.items()) for idx, row in enumerate(dic)}
-    else:    
-        nx_dic = {row[node_id]: dict(item for item in row.items() if item[0] != node_id) for row in dic}
-    geo_gr = nx.empty_graph(len(node_gdf))
-    nx.set_node_attributes(geo_gr, nx_dic)
-
-    crs = node_gdf.crs
-    geo_gr.graph['crs'] = crs.to_epsg()     
-    return gnx.GeoGraph(geo_gr)    '''
     if not node_id:
         nx_lis = [(idx, dict(item for item in row.items())) for idx, row in enumerate(dic)]
     else:    
@@ -57,14 +42,14 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
     weight = 'weight'
     
     match edge_attr:
-        case None: 
-            new_edge_attr = [geom, weight]
         case True: 
-            new_edge_attr = edge_attr
+            new_edge_attr = True
         case list() | tuple():
             new_edge_attr = list(set(edge_attr + [geom, weight]))
-        case _:
+        case str():
             new_edge_attr = [geom, weight, edge_attr]
+        case _: 
+            new_edge_attr = [geom, weight]
     if n_gdf_ok and geom in n_gdf and not geom in e_gdf:
         crs = n_gdf.crs.to_epsg()
         e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, geom)], how='left', left_on=source, right_on=node_id).rename(columns={geom:'geom_source'})
@@ -78,15 +63,6 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
         e_gdf["source_geo"] = e_gdf["geometry"].apply(lambda ls: ls.boundary.geoms[0])
         e_gdf["target_geo"] = e_gdf["geometry"].apply(lambda ls: ls.boundary.geoms[1])
         
-        '''n_gdf = pd.concat([e_gdf["source_geo"], e_gdf["target_geo"]]).drop_duplicates().reset_index(drop=True)
-        nodidx =pd.Series(n_gdf.index, index=n_gdf)
-        # print(nodidx)
-        # print(e_gdf['source_geo'])
-        e_gdf = e_gdf.join(nodidx.rename(source), on="source_geo", how='left', rsuffix='_right')
-        e_gdf = e_gdf.join(nodidx.rename(target), on="target_geo", how='left', rsuffix='_right')
-        del e_gdf["source_geo"], e_gdf["target_geo"], e_gdf["source_right"], e_gdf["target_right"] 
-        # print(e_gdf.columns)
-        n_gdf = gpd.GeoDataFrame({geom: n_gdf, node_id: n_gdf.index}, crs=crs)'''
         if source in e_gdf.columns:
             e_gdf_source = e_gdf.loc[:,[source, "source_geo"]].rename(columns={source: node_id, "source_geo": geom})
             e_gdf_target = e_gdf.loc[:,[target, "target_geo"]].rename(columns={target: node_id, "target_geo": geom})
@@ -99,29 +75,19 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
             n_gdf = gpd.GeoDataFrame({geom: n_gdf, node_id: n_gdf.index}, crs=crs)
         del e_gdf["source_geo"], e_gdf["target_geo"]
             
-    e_gdf[weight] = e_gdf[geom].length
+    if weight not in e_gdf.columns: 
+        e_gdf[weight] = e_gdf[geom].length
     geo_gr = nx.from_pandas_edgelist(e_gdf, edge_attr=new_edge_attr)
-    #print(n_gdf)
-    dic = n_gdf.to_dict(orient='records')
-    #print(dic)
-    nx_dic = {row[node_id]: dict(item for item in row.items() if item[0] != node_id) for row in dic}
-    #print(nx_dic)
-    #print(geo_gr.nodes)
     
+    dic = n_gdf.to_dict(orient='records')
+    nx_dic = {row[node_id]: dict(item for item in row.items() if item[0] != node_id) for row in dic}    
     nx.set_node_attributes(geo_gr, nx_dic)
 
     crs = e_gdf.crs if e_gdf.crs else (n_gdf.crs if n_gdf_ok else None)
-    geo_gr.graph['crs'] = crs.to_epsg()     
-    # print(geo_gr.graph, gnx.GeoGraph(geo_gr).graph)
+    geo_gr.graph['crs'] = crs.to_epsg()    
+    #node_gr = gnx.from_geopandas_nodelist(n_gdf, node_id=node_id, node_attr=node_attr)
+    #return gnx.compose(gnx.GeoGraph(geo_gr), node_gr)
     return gnx.GeoGraph(geo_gr)
-
-'''
-        e_gdf_source = e_gdf.loc[:,["source", "source_geo"]].rename(columns={"source": "id_node", "source_geo": "geometry"})
-        e_gdf_target = e_gdf.loc[:,["target", "target_geo"]].rename(columns={"target": "id_node", "target_geo": "geometry"})
-        n_gdf = pd.concat([e_gdf_source, e_gdf_target]).drop_duplicates()
-        
-        del e_gdf["source_geo"], e_gdf["target_geo"]
-'''
 
 def to_geopandas_edgelist(graph, source='source', target='target', nodelist=None):
     """Returns the graph edge list as a GeoDataFrame.

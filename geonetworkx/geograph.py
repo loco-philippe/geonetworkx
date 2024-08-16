@@ -184,10 +184,26 @@ class GeoGraph(nx.Graph):
 
 
     def find_nearest_edge(self, geom, max_distance): 
-    
+        '''Find the closest edge to a geometry
+        
+        Spatial join based on the distance between given geometry and edges geometries.
+
+        Results will include a single output records (even in case of multiple nearest and equidistant geometries).
+
+        Parameters
+        ----------
+        geom : Shapely Geometry
+            Geometry used in the spatial join.
+        max_distance : float
+            Maximum distance within which to query for nearest geometry.
+
+        Returns
+        -------
+        list
+            id of the nearest edge (list of two id_node)
+        '''
         gdf_pt = gpd.GeoDataFrame({'geometry':[geom.centroid]}, crs=self.graph['crs'])
         gdf_ed = self.to_geopandas_edgelist()
-        #print(gdf_ed)
         troncons = gdf_pt.sjoin_nearest(gdf_ed, max_distance=max_distance, distance_col='weight')
         if len(troncons):
             troncon = troncons.sort_values(by='weight').iloc[0]
@@ -196,10 +212,26 @@ class GeoGraph(nx.Graph):
         return None
 
     def find_nearest_node(self, geom, max_distance): 
-    
+        '''Find the closest node to a geometry.
+        
+        Spatial join based on the distance between given geometry and nodes geometries.
+
+        Results will include a single output records (even in case of multiple nearest and equidistant geometries).
+
+        Parameters
+        ----------
+        geom : Shapely Geometry
+            Geometry used in the spatial join.
+        max_distance : float
+            Maximum distance within which to query for nearest geometry.
+
+        Returns
+        -------
+        list
+            id of the nearest edge (list of two id_node)
+        '''    
         gdf_pt = gpd.GeoDataFrame({'geometry':[geom.centroid]}, crs=self.graph['crs'])
         gdf_no = self.to_geopandas_nodelist()
-        #print(gdf_no)
         noeuds = gdf_pt.sjoin_nearest(gdf_no, max_distance=max_distance, distance_col='weight')
         if len(noeuds):
             noeud = noeuds.sort_values(by='weight').iloc[0]
