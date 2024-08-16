@@ -51,7 +51,8 @@ class GeoGraph(nx.Graph):
             self.graph['crs'] = None
 
     def insert_node(self, geom, id_node, id_edge, att_node={}, adjust=False):
-        """The insert_node method cut an edge in two edges and insert a new node between each.
+        """Cut an edge in two edges and insert a new node between each.
+        
         The 'geometry' attribute of the two edges and the new node is build from the geometry of 
         the initial edge and the parameter geometry.
         
@@ -105,45 +106,79 @@ class GeoGraph(nx.Graph):
         """see `convert.to_geopandas_nodelist`"""
         return to_geopandas_nodelist(self, node_id=node_id, nodelist=nodelist)
 
-    def plot(self, edges=True, nodes=True, **plotparam):
-        plotparam = {'edgecolor': 'black', 'marker': 'o', 
-                     'color': 'red', 'markersize': 5} | plotparam
-        edgekeys = ['edgecolor']
-        nodekeys = ['marker', 'color', 'markersize']
-        edgeparam = dict(item for item in plotparam.items() if item[0] in edgekeys)
-        nodeparam = dict(item for item in plotparam.items() if item[0] in nodekeys)
+    def plot(self, edges=True, nodes=True, **param):
+        '''Plot a GeoGraph.
         
+        Generate a plot of the edges GeoDataFrame and nodes GeoDataFrame with matplotlib.
+        
+        Parameters
+        ----------
+            
+        - edges: boolean - default True
+            If True, edges are included in the plot.
+        - nodes: boolean - default True
+            If True, nodes are included in the plot.
+        - param: dict
+            `GeoDataFrame.plot` parameters. Parameters are common to edges and nodes. 
+            Specific parameters to nodes or edges are preceded by 'n_' or 'e_' (eg 'e_color').
+            Default is {'e_edgecolor': 'black', 
+                        'n_marker': 'o', 'n_color': 'red', 'n_markersize': 5}
+        '''
+        param = {'e_edgecolor': 'black', 
+                 'n_marker': 'o', 'n_color': 'red', 'n_markersize': 5} | param
+        common_param = dict((k, v) for k, v in param.items() if k[:2] not in ['e_', 'n_'] and v)
+        edge_param = common_param | dict((k[2:], v) for k, v in param.items() if k[:2] == 'e_' and v)
+        node_param = common_param | dict((k[2:], v) for k, v in param.items() if k[:2] == 'n_' and v)
+   
         fig, ax = plt.subplots()
         if edges: 
-            self.to_geopandas_edgelist().plot(ax=ax, **edgeparam)
+            self.to_geopandas_edgelist().plot(ax=ax, **edge_param)
         if nodes: 
-            self.to_geopandas_nodelist().plot(ax=ax, **nodeparam)
+            self.to_geopandas_nodelist().plot(ax=ax, **node_param)
         plt.show()
 
     def explore(self, refmap=None, edges=True, nodes=True, nodelist=None, 
-                layercontrol=False, **expparam): 
+                layercontrol=False, **param): 
+        '''Interactive map based on GeoPandas and folium/leaflet.js
+
+        Generate an interactive leaflet map based on the edges GeoDataFrame and nodes GeoDataFrame.
         
-        expparam = {'e_name': 'edges', 'n_name': 'nodes',
+        Parameters
+        ----------
+            
+        - refmap: dict or folium map - default None
+            Existing map instance or map defined by a dict (see folium Map keywords) 
+            on which to draw the GeoGraph.
+        - edges: boolean
+            If True, edges are includes in the plot.
+        - nodes: boolean
+            If True, nodes defined by nodelist are included in the plot.
+        - nodelist: list - default None
+            Use only nodes specified in nodelist (all if None).
+        - layercontrol: boolean - default False
+            Add folium.LayerControl to the map if True.
+        - param: dict
+            `GeoDataFrame.explore` parameters. Parameters are common to edges and nodes. 
+            Specific parameters to nodes or edges are preceded by 'n_' or 'e_' (eg 'e_color')
+        '''        
+        param = {'e_name': 'edges', 'n_name': 'nodes',
                     'e_popup': ['weight'], 'n_popup': None,
                     'e_tooltip': None, 'n_tooltip': None, 
                     'e_color': 'blue', 'n_color': 'black',
-                    'n_marker_kwds': {'radius': 2, 'fill': True}}   | expparam
-        edgeparam = dict((k[2:], v) for k, v in expparam.items() if k[:2] == 'e_' and v)
-        nodeparam = dict((k[2:], v) for k, v in expparam.items() if k[:2] == 'n_' and v)
+                    'n_marker_kwds': {'radius': 2, 'fill': True}} | param
+        common_param = dict((k, v) for k, v in param.items() if k[:2] not in ['e_', 'n_'] and v)
+        edge_param = common_param | dict((k[2:], v) for k, v in param.items() if k[:2] == 'e_' and v)
+        node_param = common_param | dict((k[2:], v) for k, v in param.items() if k[:2] == 'n_' and v)
         
         if isinstance(refmap, dict):
             refmap = folium.Map(**refmap)
-        
+        elif refmap is None:
+            refmap = folium.Map()
+            
         if edges:
-            if refmap:
-                self.to_geopandas_edgelist(nodelist=nodelist).explore(m=refmap, **edgeparam)
-            else:
-                refmap = self.to_geopandas_edgelist(nodelist=nodelist).explore(**edgeparam)
+            self.to_geopandas_edgelist(nodelist=nodelist).explore(m=refmap, **edge_param)
         if nodes:
-            if refmap:
-                self.to_geopandas_nodelist(nodelist=nodelist).explore(m=refmap, **nodeparam)
-            else:
-                refmap = self.to_geopandas_nodelist(nodelist=nodelist).explore(**nodeparam)
+            self.to_geopandas_nodelist(nodelist=nodelist).explore(m=refmap, **node_param)
         if layercontrol:
             folium.LayerControl().add_to(refmap)
         return refmap
