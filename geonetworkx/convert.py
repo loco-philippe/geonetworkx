@@ -1,4 +1,16 @@
 # -*- coding: utf-8 -*-
+"""
+This module contains conversion functions between `geonetworkx.GeoGraph` data and 
+`geopandas.GeoDataFrame` data.
+
+The conversion follows two principles:
+    
+- reversibility: A round-trip return the initial object (lossless conversion),
+- optimization: Missing geometries ares reconstructed in two cases. If the nodes are not 
+present, nodes are added with a geometry corresponding to edges ends. If 
+the geometries edges are not present, a segment between the nodes geometry is added.
+ 
+"""
 
 import pandas as pd
 import numpy as np
@@ -7,6 +19,28 @@ import networkx as nx
 import geonetworkx as gnx
 
 def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
+    '''Convert a GeoDataFrame in an empty GeoGraph (without edges).
+    
+    The GeoDataFrame should contain at least one column ('geometry').
+    Columns of the GeoDataFrame are converted in node attributes.
+    Rows of the GeoDataFrame are converted in nodes.
+    Node id are row numbers (default) or values of a defined column.
+
+    Parameters
+    ----------
+    node_gdf : GeoDataFrame
+        Tabular representation of nodes.
+    node_id : String, optional
+        Name of the column of node id. The default is None.
+    node_attr : list, optional
+        List of column names to convert in attributes. The default is None.
+        'geometry' column is always converted in 'geometry' attribute.
+
+    Returns
+    -------
+    GeoGraph
+        Empty GeoGraph with nodes of the GeoDataFrame.
+    '''
     geom = 'geometry'
     match node_attr:
         case True: 
