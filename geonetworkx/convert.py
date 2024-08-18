@@ -17,11 +17,15 @@ import numpy as np
 import geopandas as gpd
 import networkx as nx
 import geonetworkx as gnx
+import geonetworkx.utils as utils
+
+GEOM = 'geometry'
+WEIGHT = 'weight'
 
 def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
     '''Convert a GeoDataFrame in an empty GeoGraph (without edges).
     
-    The GeoDataFrame should contain at least one column ('geometry').
+    The GeoDataFrame should contain at least one column ('geometry') filled with Shapely geometries.
     Columns of the GeoDataFrame are converted in node attributes.
     Rows of the GeoDataFrame are converted in nodes.
     Node id are row numbers (default) or values of a defined column.
@@ -44,16 +48,15 @@ def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
     GeoGraph
         Empty GeoGraph with nodes of the GeoDataFrame.
     '''
-    geom = 'geometry'
     match node_attr:
         case True: 
             new_node_attr = list(node_gdf.columns)
         case list() | tuple():
-            new_node_attr = list(set(node_attr + [geom]))
+            new_node_attr = list(set(node_attr + [GEOM]))
         case str():
-            new_node_attr = [geom, node_attr]    
+            new_node_attr = [GEOM, node_attr]    
         case _: 
-            new_node_attr = [geom]
+            new_node_attr = [GEOM]
     if node_id:
         new_node_attr = list(set(new_node_attr + [node_id]))
     dic = node_gdf.loc[:, new_node_attr].to_dict(orient='records')
@@ -69,13 +72,25 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
     '''Returns a GeoGraph from GeoDataFrame containing an edge list.
     
     The GeoDataFrame should contain at least three columns (node id source, node id target, geometry).
-    An additional GeoDataFrame is used to load nodes.
-    The geometry is a shapely object present in the 'geometry' column of each GeoDataFrame.
+    An additional GeoDataFrame is used to load nodes with at least a node id column.
+    The geometry is a Shapely object present in the 'geometry' column of each GeoDataFrame.
     If the 'geometry' is present in only one GeoDataFrame, the other 'geometry' is deduced.
     If the geometries are present in both GeoDataFrame, they should be consistent
+    The 'geometry' column is always converted in 'geometry' attribute.
     
     Parameters
     ----------
+    edge_gdf : GeoDataFrame
+        Tabular representation of edges.
+    source : str (default 'source')
+        A valid column name for the source nodes (for the directed case).
+    target : str (default 'target')
+        A valid column name for the target nodes (for the directed case).
+    edge_attr : str, iterable, True, or None
+        A valid column name or iterable of column names that are
+        used to retrieve items and add them to the GeoGraph as edge attributes.
+        If `True`, all columns will be added except `source`, `target`.
+        If `None`, no edge attributes are added to the GeoGraph.
     node_gdf : GeoDataFrame, optional
         Tabular representation of nodes.
     node_id : String, optional
@@ -85,66 +100,41 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
         used to retrieve items and add them to the graph as edge attributes. 
         If True, all of the remaining columns will be added. If None (default), no edge 
         attributes are added to the graph.    
-    list : List of column names to convert in attributes
-        boolean: If True, all columns are included,
-        string: Name of a single column.
-        The default is True.
-        The 'geometry' column is always converted in 'geometry' attribute.
 
     Returns
     -------
     GeoGraph
-        Empty GeoGraph with nodes of the GeoDataFrame.'''
+        GeoGraph with edges of the GeoDataFrame.'''
     
     n_gdf_ok = node_gdf is not None
     e_gdf = edge_gdf.copy()
     n_gdf = node_gdf.copy() if n_gdf_ok else None
-    geom = 'geometry'
-    weight = 'weight'
     
     match edge_attr:
         case True: 
             new_edge_attr = True
         case list() | tuple():
-            new_edge_attr = list(set(edge_attr + [geom, weight]))
+            new_edge_attr = list(set(edge_attr + [GEOM, WEIGHT]))
         case str():
-            new_edge_attr = [geom, weight, edge_attr]
+            new_edge_attr = [GEOM, WEIGHT, edge_attr]
         case _: 
-            new_edge_attr = [geom, weight]
-    if n_gdf_ok and geom in n_gdf and not geom in e_gdf:
-        crs = n_gdf.crs.to_epsg()
-        e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, geom)], how='left', left_on=source, right_on=node_id).rename(columns={geom:'geom_source'})
-        e_gdf.pop(node_id) 
-        e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, geom)], how='left', left_on=target, right_on=node_id).rename(columns={geom:'geom_target'})
-        e_gdf.pop(node_id) 
-        e_gdf = gpd.GeoDataFrame(edge_gdf, geometry = gpd.GeoSeries(e_gdf['geom_source']).shortest_line(gpd.GeoSeries(e_gdf['geom_target'])), crs=crs)
+            new_edge_attr = [GEOM, WEIGHT]
+
+    if n_gdf_ok and GEOM in n_gdf and not GEOM in e_gdf:
+        node_id = node_id if node_id else 'node_id'
+        e_gdf = utils.add_geometry_edges_from_nodes(e_gdf, source, target, n_gdf, node_id)
     elif not n_gdf_ok:
-        crs = e_gdf.crs.to_epsg()
-        node_id = 'node_id'
-        e_gdf["source_geo"] = e_gdf["geometry"].apply(lambda ls: ls.boundary.geoms[0])
-        e_gdf["target_geo"] = e_gdf["geometry"].apply(lambda ls: ls.boundary.geoms[1])
-        
-        if source in e_gdf.columns:
-            e_gdf_source = e_gdf.loc[:,[source, "source_geo"]].rename(columns={source: node_id, "source_geo": geom})
-            e_gdf_target = e_gdf.loc[:,[target, "target_geo"]].rename(columns={target: node_id, "target_geo": geom})
-            n_gdf = pd.concat([e_gdf_source, e_gdf_target]).drop_duplicates()
-        else:
-            n_gdf = pd.concat([e_gdf["source_geo"], e_gdf["target_geo"]]).drop_duplicates().reset_index(drop=True)
-            nodidx =pd.Series(n_gdf.index, index=n_gdf)
-            e_gdf = e_gdf.join(nodidx.rename(source), on="source_geo", how='left')
-            e_gdf = e_gdf.join(nodidx.rename(target), on="target_geo", how='left')
-            n_gdf = gpd.GeoDataFrame({geom: n_gdf, node_id: n_gdf.index}, crs=crs)
-        del e_gdf["source_geo"], e_gdf["target_geo"]
+        n_gdf, e_gdf = utils.nodes_gdf_from_edges_gdf(e_gdf, source=source, target=target)
             
-    if weight not in e_gdf.columns: 
-        e_gdf[weight] = e_gdf[geom].length
+    if WEIGHT not in e_gdf.columns: 
+        e_gdf[WEIGHT] = e_gdf[GEOM].length
     geo_gr = nx.from_pandas_edgelist(e_gdf, edge_attr=new_edge_attr)
     
     crs = e_gdf.crs if e_gdf.crs else (n_gdf.crs if n_gdf_ok else None)
     geo_gr.graph['crs'] = crs.to_epsg()    
     node_gr = gnx.from_geopandas_nodelist(n_gdf, node_id=node_id, node_attr=node_attr)
     return gnx.compose(gnx.GeoGraph(geo_gr), node_gr)
-
+        
 def to_geopandas_edgelist(graph, source='source', target='target', nodelist=None):
     """Returns the graph edge list as a GeoDataFrame.
     

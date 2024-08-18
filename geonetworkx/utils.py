@@ -7,8 +7,9 @@ from shapely import LineString, Point
 import pandas as pd
 import numpy as np
 import geopandas as gpd
-import folium
-import networkx as nx
+
+GEOM = 'geometry'
+WEIGHT = 'weight'
 
 def geo_cut(line, geom, adjust=False):
     ''' Cuts a line in two at the geometry nearest projection point 
@@ -50,6 +51,78 @@ def geo_cut(line, geom, adjust=False):
             return [LineString(coords[:ind] + [new_c]), LineString([new_c] + coords[ind:]), Point(new_c), dist]
     return None
 
+def nodes_gdf_from_edges_gdf(e_gdf, source=None, target=None):
+    """create a nodes GeoDataFrame from an edges GeoDataFrame.
+
+    A node geometry is one of the ends (Point) of the edge geometry (LineString).
+    If source and target are not present in e_gdf, they are added.
+    
+    Parameters
+    ----------
+    e_gdf : GeoDataFrame
+        Tabular representation of edges.
+    source : str (default None)
+        A valid column name for the source nodes (for the directed case).
+    target : str (default 'target')
+        A valid column name for the target nodes (for the directed case).
+    
+    Returns
+    -------
+    tuple of two GeoDataFrame
+       n_gdf: Tabular representation of nodes (created),
+       e_gdf: Tabular representation of nodes (addition of source and target columns), 
+    """
+    crs = e_gdf.crs.to_epsg()
+    node_id = 'node_id'
+    e_gdf["source_geo"] = e_gdf[GEOM].apply(lambda ls: ls.boundary.geoms[0])
+    e_gdf["target_geo"] = e_gdf[GEOM].apply(lambda ls: ls.boundary.geoms[1])
+    
+    if source in e_gdf.columns:
+        e_gdf_source = e_gdf.loc[:,[source, "source_geo"]].rename(columns={source: node_id, "source_geo": GEOM})
+        e_gdf_target = e_gdf.loc[:,[target, "target_geo"]].rename(columns={target: node_id, "target_geo": GEOM})
+        n_gdf = pd.concat([e_gdf_source, e_gdf_target]).drop_duplicates()
+    else:
+        n_gdf = pd.concat([e_gdf["source_geo"], e_gdf["target_geo"]]).drop_duplicates().reset_index(drop=True)
+        nodidx =pd.Series(n_gdf.index, index=n_gdf)
+        e_gdf = e_gdf.join(nodidx.rename(source), on="source_geo", how='left')
+        e_gdf = e_gdf.join(nodidx.rename(target), on="target_geo", how='left')
+        n_gdf = gpd.GeoDataFrame({GEOM: n_gdf, node_id: n_gdf.index}, crs=crs)
+    del e_gdf["source_geo"], e_gdf["target_geo"]    
+    return (n_gdf, e_gdf)
+
+def add_geometry_edges_from_nodes(e_gdf, source, target, n_gdf, node_id):
+    """add a geometry column in an edges GeoDataFrame from geometry nodes.
+
+    An edge geometry is a segment (LineString) between the points (geometry.centroid)
+    of the nodes geometries.
+    
+    Parameters
+    ----------
+    e_gdf : GeoDataFrame
+        Tabular representation of edges.
+    n_gdf : GeoDataFrame
+        Tabular representation of nodes.
+    node_id : String
+        Name of the column of node id.
+    
+    Returns
+    -------
+    GeoDataFrame
+       Graph edge with additional 'geometry' column.
+    """
+    crs = n_gdf.crs.to_epsg()
+    e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, GEOM)], how='left', left_on=source,
+                     right_on=node_id).rename(columns={GEOM:'geom_source'})
+    e_gdf.pop(node_id) 
+    e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, GEOM)], how='left', left_on=target, 
+                     right_on=node_id).rename(columns={GEOM:'geom_target'})
+    e_gdf.pop(node_id) 
+    gs_src = gpd.GeoSeries(e_gdf['geom_source'])
+    gs_tgt = gpd.GeoSeries(e_gdf['geom_target'])
+    e_gdf = gpd.GeoDataFrame(e_gdf, geometry = gs_src.shortest_line(gs_tgt), crs=crs)
+    del e_gdf["geom_source"], e_gdf["geom_target"]
+    return e_gdf
+      
 def geom_to_crs(geom, crs, new_crs):
     return gpd.GeoSeries([geom], crs=crs).to_crs(new_crs)[0]
 
