@@ -2,10 +2,10 @@
 """
 Functions used for geometry analysis
 """
-import shapely
+# import shapely
 from shapely import LineString, Point
 import pandas as pd
-import numpy as np
+# import numpy as np
 import geopandas as gpd
 
 GEOM = 'geometry'
