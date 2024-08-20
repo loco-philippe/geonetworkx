@@ -124,12 +124,45 @@ def add_geometry_edges_from_nodes(e_gdf, source, target, n_gdf, node_id):
     return e_gdf
       
 def geom_to_crs(geom, crs, new_crs):
+    '''convert geometry coordinates from a CRS to another CRS
+
+    Parameters
+    ----------
+    geom : Shapely geometry
+        Geometry to convert.
+    crs : geopandas CRS
+        CRS of the existing geometry.
+    new_crs : geopandas CRS
+        CRS to apply to geometry.
+    
+    Returns
+    -------
+    Shapely geometry
+       Geometry with coordinates defined in the new CRS.
+'''
     return gpd.GeoSeries([geom], crs=crs).to_crs(new_crs)[0]
 
-def cast_id(node_id):
+def cast_id(node_id, only_int=False):
+    '''replace number string as integer in a single or an iterable.
+    
+    If option is activate, return only integer.
+    
+    Parameters
+    ----------
+    node_id : Single or iterable string/integer 
+        Value to convert
+    only_int : Boolean
+        If True return only integer.
+
+    Returns
+    -------
+    List
+       list of int (if only_int) or list of int/string.
+    '''
     if hasattr(node_id, '__iter__') and not isinstance(node_id, str): 
-        return list(n_id for n_id in node_id if isinstance(n_id, int))
+        cast_list = list(cast_id(n_id, only_int=only_int) for n_id in node_id)
+        return  [val for val in cast_list if val is not None]
     try:
         return int(node_id)
     except:
-        return node_id
+        return None if only_int else node_id

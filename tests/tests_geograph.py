@@ -11,6 +11,7 @@ import geopandas as gpd
 import geonetworkx as gnx 
 import networkx as nx 
 import pandas as pd
+import geonetworkx.utils as utils
 from networkx.utils import graphs_equal
 
 paris = Point(2.3514, 48.8575)
@@ -34,6 +35,23 @@ class TestGeoGraph(unittest.TestCase):
         gr_simplemap2 = gnx.from_geopandas_edgelist(simple_edge, node_attr=True, node_gdf=simple_node, node_id='node_id')
         self.assertTrue(graphs_equal(gr_simplemap, gr_simplemap2))
 
+class TestUtils(unittest.TestCase):
+    """tests utils module"""
 
+    def test_cast(self):
+        """tests cast function"""
+        tests = [ 1, '01', [1,2], [1, '02']]
+        tests2 = [ 'x1', [1, 'x2']]
+        tests3 = [None, [1, None]]
+        for test in tests:
+            self.assertTrue(utils.cast_id(test) in (1, [1,2]))
+            self.assertEqual(utils.cast_id(test, True), utils.cast_id(test))
+        for test in tests2:
+            self.assertEqual(utils.cast_id(test), test)
+            self.assertTrue(utils.cast_id(test, True) in (None, [1]))
+        for test in tests3:
+            self.assertTrue(utils.cast_id(test, True) in (None, [1]))
+            self.assertTrue(utils.cast_id(test, True) in (None, [1]))
+            
 if __name__ == "__main__":
     unittest.main(verbosity=2)
