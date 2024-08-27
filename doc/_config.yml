@@ -39,5 +39,7 @@ sphinx:
   - 'sphinx.ext.autodoc'
   - 'sphinx.ext.viewcode'
   - 'sphinx.ext.autosummary'
+  - 'autoapi.extension'
   config:
     autosummary_generate: True
+    autoapi_dirs: ['../geonetworkx']
