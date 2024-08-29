@@ -1,7 +1,13 @@
 API documentation
 =================
 
-bla bla bla bla.
+Functions
+---------
+
+Functional interface to GeoGraph methods and assorted utilities.
+
+GeoGraph
+--------
 
 .. autosummary::
    :toctree: _autosummary
@@ -9,7 +15,8 @@ bla bla bla bla.
 
    geonetworkx.geograph
 
-bla2 bla 2 bla 2
+Utilities
+---------
 
 .. autosummary::
    :toctree: _autosummary
