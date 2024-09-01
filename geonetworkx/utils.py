@@ -174,5 +174,5 @@ def cast_id(node_id, only_int=False):
         return [val for val in cast_list if val is not None]
     try:
         return int(node_id)
-    except ValueError:
+    except (ValueError, TypeError):
         return None if only_int else node_id

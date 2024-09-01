@@ -1,6 +1,7 @@
 pandas
 geopandas
 
+networkx
 shapely
 matplotlib
 folium
