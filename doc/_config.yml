@@ -1,9 +1,9 @@
 # Book settings
 # Learn more at https://jupyterbook.org/customize/config.html
 
-title: User guide book
-author: GeoNetworkX Community
-logo: ./images/logo_fabnum_mtes.png
+title: User guide
+author: GeoNetworkX Community - V0.0.1
+logo: ./geonetworkx.svg
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
