@@ -1,9 +1,10 @@
-# GeoNetworkX : Geospatial Network Analysis
-
+# GeoNetworkX : Geospatial Network Analysis <img src="./docs/geonetworkx.png" alt="geonetworkx" style="float:right;width:100px;height:90px;">
 
 GeoNetworkX is a Python package for the creation, manipulation, and study of geospatial networks.
 
 GeoNetworkX extends NetworkX operations to allow operations on geometric types.
+
+*The GeoNetworkX package was created as part of the [Qualicharge](https://github.com/MTES-MCT/qualicharge) project*
 
 ## Description
 
@@ -12,7 +13,6 @@ GeoNetworkX combines the capabilities of NetworkX, GeoPandas and shapely :
 - NetworkX is the core of GeoNetworkX,
 - GeoPandas is the support for vectorized processing,
 - GeoNetworkX uses shapely for geometry analysis and manipulation  
-
 
 ## Data structures
 
@@ -29,7 +29,7 @@ is a node and edge attribute (shapely object),
 
 ## Example
 
-Distance from Paris to Marseille
+Simple distance from Paris to Marseille
 
 ```python
 In [1]: import geonetworkx as gnx
@@ -70,8 +70,8 @@ Out[6]: 668246.1446978811
 
 Install the latest released version of GeoNetworkX:
 
-```
-$ pip install geonetworkx
+```shell
+pip install geonetworkx
 ```
 
 ## Bugs
