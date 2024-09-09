@@ -1,5 +1,7 @@
 # GeoNetworkX : Geospatial Network Analysis
 
+<img src="./docs/geonetworkx.png" alt="geonetworkx" style="float:right;width:233px;height:64px;">
+
 GeoNetworkX is a Python package for the creation, manipulation, and study of geospatial networks.
 
 GeoNetworkX extends NetworkX operations to allow operations on geometric types.
