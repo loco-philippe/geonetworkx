@@ -14,6 +14,8 @@ GeoNetworkX combines the capabilities of NetworkX, GeoPandas and shapely :
 - GeoPandas is the support for vectorized processing,
 - GeoNetworkX uses shapely for geometry analysis and manipulation  
 
+Documentation is available at https://loco-labs.github.io/geonetworkx/
+
 ## Data structures
 
 `geonetworkx.GeoGraph` is a subclass of `networkx.Graph` with additional data:
