@@ -4,7 +4,7 @@ GeoNetworkX is a Python package for the creation, manipulation, and study of geo
 
 GeoNetworkX extends NetworkX operations to allow operations on geometric types.
 
-*the GeoNetworkX package was created as part of the [Qualicharge](https://github.com/MTES-MCT/qualicharge) project*
+*The GeoNetworkX package was created as part of the [Qualicharge](https://github.com/MTES-MCT/qualicharge) project*
 
 ## Description
 
