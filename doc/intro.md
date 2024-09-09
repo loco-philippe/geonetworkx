@@ -27,7 +27,7 @@ is a node and edge attribute (shapely object),
 
 ## Example
 
-Distance from Paris to Marseille
+Simple distance from Paris to Marseille
 
 ```python
 In [1]: import geonetworkx as gnx
