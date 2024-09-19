@@ -30,6 +30,7 @@ class GeoGraph(nx.Graph):
     - `explore`
     - `find_nearest_edge`
     - `find_nearest_node`
+    - `weight_extend`
 
     """
 
@@ -253,6 +254,33 @@ class GeoGraph(nx.Graph):
             return cast_id(noeud['node_id'])
         return None
 
+    def weight_extend(self, edge, bi_gr, radius=None):
+        '''Find the path between nodes included in a bipartite graph and witch contains edge with minimal weight and between nodes included in a bipartite graph.
+
+        Parameters
+        ----------
+        edge : tuple
+            Edge to extend in the bipartite graph.
+        bi_gr : Graph
+            Bipartite Graph
+        radius : float (default None)
+            radius used to find the nearest bipartite nodes for each node of the edge.
+            If None, the radius used is the weight of the edge 
+        Returns
+        -------
+        float
+            extended weight  
+        '''
+        dist_ext = self.edges[edge]['weight']
+        radius = max(dist_ext, radius) if radius else dist_ext
+        for node in edge:
+            ego_gr = nx.ego_graph(self, node, radius=radius, distance='weight').nodes
+            near_st = [nd for nd in ego_gr if nd in bi_gr and nd != node]
+            dist_st = [nx.shortest_path_length(self, source=node, target=nd, weight='weight') for nd in near_st]
+            if not dist_st:
+                return None
+            dist_ext += min(dist_st) 
+        return dist_ext
 
 class GeoGraphError(Exception):
     """GeoGraph Exception"""
