@@ -7,6 +7,7 @@ import geopandas as gpd
 import folium
 import networkx as nx
 import matplotlib.pyplot as plt
+from shapely import LineString
 from geonetworkx.convert import to_geopandas_edgelist
 from geonetworkx.convert import to_geopandas_nodelist
 from geonetworkx.utils import geo_cut, cast_id
@@ -24,6 +25,7 @@ class GeoGraph(nx.Graph):
     *instance methods*
 
     - `insert_node`
+    - `project_node`
     - `to_geopandas_edgelist`
     - `to_geopandas_nodelist`
     - `plot`
@@ -49,6 +51,36 @@ class GeoGraph(nx.Graph):
         super().__init__(incoming_graph_data, **attr)
         if 'crs' not in self.graph:
             self.graph['crs'] = None
+
+    def project_node(self, add_node, graph, radius, att_edge):
+        '''Add a LineString edge between 'add_node' and the nearest node of 'graph'. The LineString length has to be lower than radius
+
+        Parameters
+        ----------
+
+        add_node: id
+            Id of the node to project.
+        att_edge: dict
+            Attributes of the added edge.
+        graph: GeoGraph
+            Graph to connect to the add_node.
+        radius : float
+            Maximum distance between add_node and graph.
+
+        Returns
+        -------
+
+        dist: float
+            Distance between add_node and graph (None if distance > radius).
+          '''
+        geo_st = self.nodes[add_node]['geometry'].centroid
+        id_node = graph.find_nearest_node(geo_st, radius) # recherche d'un noeud à moins de 3 km
+        if not id_node:
+            return None
+        dis1 = geo_st.distance(graph.nodes[id_node]['geometry'])
+        geo1 = LineString([graph.nodes[id_node]['geometry'], geo_st])
+        self.add_edge(id_node, add_node, **(att_edge | {'geometry':geo1, 'weight': dis1})) # ajout du lien entre la station et le noeud routier
+        return dis1
 
     def insert_node(self, geom, id_node, id_edge, att_node={}, adjust=False):
         """Cut an edge in two edges and insert a new node between each.
@@ -220,7 +252,6 @@ class GeoGraph(nx.Graph):
             gdf_ed, max_distance=max_distance, distance_col='weight')
         if len(troncons):
             troncon = troncons.sort_values(by='weight').iloc[0]
-
             return [cast_id(troncon['source']), cast_id(troncon['target'])]
         return None
 
