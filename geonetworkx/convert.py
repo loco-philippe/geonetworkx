@@ -135,8 +135,9 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
 
     if WEIGHT not in e_gdf.columns:
         e_gdf[WEIGHT] = e_gdf[GEOM].length
+    print(e_gdf)
     geo_gr = nx.from_pandas_edgelist(e_gdf, edge_attr=new_edge_attr)
-
+    print(geo_gr.edges)
     crs = e_gdf.crs if e_gdf.crs else (n_gdf.crs if n_gdf_ok else None)
     geo_gr.graph['crs'] = crs.to_epsg()
     node_gr = gnx.from_geopandas_nodelist(
@@ -238,5 +239,8 @@ def project_graph(nodes_src, target, radius, node_attr, edge_attr):
     gs_edges['geometry'] = gpd.GeoSeries(gs_edges['geometry']).shortest_line(gpd.GeoSeries(joined['geom_right']))
     for key, value in edge_attr.items():
         gs_edges[key] = value
+    print(gs_edges)
+    print(gs_nodes)
     gs = gnx.from_geopandas_edgelist(gs_edges, edge_attr=True, node_gdf=gs_nodes, node_id='node_id', node_attr=node_attr)
+    print(gs.edges)
     return (gs, nodes_src_other)
