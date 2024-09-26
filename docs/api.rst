@@ -13,7 +13,7 @@ GeoGraph
    :toctree: _autosummary
    :recursive:
 
-   geonetworkx.geograph
+   geo_nx.geograph
 
 Utilities
 ---------
@@ -22,7 +22,7 @@ Utilities
    :toctree: _autosummary
    :recursive:
 
-   geonetworkx.convert
-   geonetworkx.algorithms
-   geonetworkx.utils
+   geo_nx.convert
+   geo_nx.algorithms
+   geo_nx.utils
 

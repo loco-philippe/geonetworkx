@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-`geonetworkx` setup
+`geo_nx` setup
 """
 
 import pathlib
@@ -10,12 +10,12 @@ here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
-    name="geonetworkx",
+    name="geo_nx",
     version="0.0.1",
-    description="GeoNetworkX : Geospatial network analysis",
+    description="Geo-NX : Geospatial network analysis",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/loco-labs/geonetworkx/blob/main/README.md",
+    url="https://github.com/loco-labs/geo_nx/blob/main/README.md",
     author="Philippe Thomy",
     author_email="philippe@loco-labs.io",
     classifiers=[
@@ -26,7 +26,7 @@ setup(
         "Programming Language :: Python :: 3",
     ],
     keywords="network, geographic, geospatial, open data",
-    packages=find_packages(include=["geonetworkx", "geonetworkx.*"]),
+    packages=find_packages(include=["geo_nx", "geo_nx.*"]),
     python_requires=">=3.11, <4",
     install_requires=[],
 )

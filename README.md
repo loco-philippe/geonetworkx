@@ -1,29 +1,29 @@
-# GeoNetworkX : Geospatial Network Analysis <img src="./docs/geonetworkx.png" alt="geonetworkx" style="float:right;width:100px;height:90px;">
+# Geo-NX : Geospatial Network Analysis <img src="./docs/geo_nx.png" alt="geo_nx" style="float:right;width:100px;height:90px;">
 
-GeoNetworkX is a Python package for the creation, manipulation, and study of geospatial networks.
+Geo-NX is a Python package for the creation, manipulation, and study of geospatial networks.
 
-GeoNetworkX extends NetworkX operations to allow operations on geometric types.
+Geo-NX extends NetworkX operations to allow operations on geometric types.
 
-*The GeoNetworkX package was created as part of the [Qualicharge](https://github.com/MTES-MCT/qualicharge) project*
+*The Geo-NX package was created as part of the [Qualicharge](https://github.com/MTES-MCT/qualicharge) project*
 
 ## Description
 
-GeoNetworkX combines the capabilities of NetworkX, GeoPandas and shapely :
+Geo-NX combines the capabilities of NetworkX, GeoPandas and shapely :
 
-- NetworkX is the core of GeoNetworkX,
+- NetworkX is the core of Geo-NX,
 - GeoPandas is the support for vectorized processing,
-- GeoNetworkX uses shapely for geometry analysis and manipulation  
+- Geo-NX uses shapely for geometry analysis and manipulation  
 
-Documentation is available at https://loco-labs.github.io/geonetworkx/
+Documentation is available at https://loco-labs.github.io/geo_nx/
 
 ## Data structures
 
-`geonetworkx.GeoGraph` is a subclass of `networkx.Graph` with additional data:
+`geo_nx.GeoGraph` is a subclass of `networkx.Graph` with additional data:
 
 - 'crs': coordinate reference system,
 - 'geometry': geospatial representation of nodes and edges.
 
-A `geonetworkx.GeoGraph` has two representations:
+A `geo_nx.GeoGraph` has two representations:
 
 - a `networkx.Graph` representation where 'crs' is a graph attribute and 'geometry' 
 is a node and edge attribute (shapely object),
@@ -34,7 +34,7 @@ is a node and edge attribute (shapely object),
 Simple distance from Paris to Marseille
 
 ```python
-In [1]: import geonetworkx as gnx
+In [1]: import geo_nx as gnx
         
         paris = Point(2.3514, 48.8575)
         lyon = Point(4.8357, 45.7640)
@@ -70,13 +70,13 @@ Out[6]: 668246.1446978811
 
 ## Install
 
-Install the latest released version of GeoNetworkX:
+Install the latest released version of Geo-NX:
 
 ```shell
-pip install geonetworkx
+pip install geo_nx
 ```
 
 ## Bugs
 
-Please report any bugs that you find [here](https://github.com/loco-labs/geonetworkx/issues). 
+Please report any bugs that you find [here](https://github.com/loco-labs/geo_nx/issues). 
 Or, even better, fork the repository on GitHub and create a pull request (PR).
