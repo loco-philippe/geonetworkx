@@ -102,8 +102,8 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
         Name of the column of node id. The default is 'node_id'.
     node_attr : list, boolean or string - optional
         A valid column name (str or int) or tuple/list of column names that are
-        used to retrieve items and add them to the graph as edge attributes.
-        If True, all of the remaining columns will be added. If None (default), no edge
+        used to retrieve items and add them to the graph as node attributes.
+        If True, all of the remaining columns will be added. If None (default), no node
         attributes are added to the graph.
 
     Returns
@@ -135,8 +135,9 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
 
     if WEIGHT not in e_gdf.columns:
         e_gdf[WEIGHT] = e_gdf[GEOM].length
+    print(e_gdf)
     geo_gr = nx.from_pandas_edgelist(e_gdf, edge_attr=new_edge_attr)
-
+    print(geo_gr.edges)
     crs = e_gdf.crs if e_gdf.crs else (n_gdf.crs if n_gdf_ok else None)
     geo_gr.graph['crs'] = crs.to_epsg()
     node_gr = gnx.from_geopandas_nodelist(
@@ -197,3 +198,49 @@ def to_geopandas_nodelist(graph, node_id='node_id', nodelist=None):
     if nodelist:
         nodes = nodes.set_index(node_id).loc[nodelist].reset_index()
     return gpd.GeoDataFrame(nodes, crs=graph.graph['crs'])
+
+
+def project_graph(nodes_src, target, radius, node_attr, edge_attr):
+    '''Projection of a list of nodes into a graph. 
+    
+    The projection create a new graph where nodes are the nodes to project and edges are LineString between a node to project and the nearest node in the graph.
+    
+    Parameters
+    ----------
+    nodes_src : GeoDataFrame
+        The GeoDataFrame contains geometry and node_id columns.
+
+    target : GeoDataFrame
+        Target is the nodes GeoDataFrame of the graph. It contains geometry and node_id columns.
+
+    radius : float
+        Maximal distance of the nearest nodes.
+
+    node_attr : list of string
+        Nodes attributes to add in the new graph.
+    
+    edge_attr : dict
+        The dict is added as an edge attribute to each edge created 
+
+    Returns
+    -------
+    tuple (GeoGraph, GeoDataFrame)
+       The GeoGraph is the garph created.
+       The GeoDataFrame is the nodes_src with non projected nodes.
+    '''
+    target['geom_right'] = target['geometry']
+    joined = gpd.sjoin_nearest(nodes_src, target, how='left', max_distance=radius, distance_col='weight')
+    joined = joined[pd.notna(joined['weight'])]
+    nodes_src_other = nodes_src[~nodes_src.index.isin(joined.index)]
+    
+    gs_nodes = joined[node_attr + ['geometry', 'node_id_left', ]].rename(columns={"node_id_left": "node_id"})
+    gs_edges = joined[['node_id_left', 'node_id_right', 'weight', 'geometry']]
+    gs_edges = gs_edges.rename(columns={"node_id_left": "source", "node_id_right": "target"})
+    gs_edges['geometry'] = gpd.GeoSeries(gs_edges['geometry']).shortest_line(gpd.GeoSeries(joined['geom_right']))
+    for key, value in edge_attr.items():
+        gs_edges[key] = value
+    print(gs_edges)
+    print(gs_nodes)
+    gs = gnx.from_geopandas_edgelist(gs_edges, edge_attr=True, node_gdf=gs_nodes, node_id='node_id', node_attr=node_attr)
+    print(gs.edges)
+    return (gs, nodes_src_other)

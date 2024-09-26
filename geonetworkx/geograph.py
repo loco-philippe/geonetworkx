@@ -7,6 +7,7 @@ import geopandas as gpd
 import folium
 import networkx as nx
 import matplotlib.pyplot as plt
+from shapely import LineString
 from geonetworkx.convert import to_geopandas_edgelist
 from geonetworkx.convert import to_geopandas_nodelist
 from geonetworkx.utils import geo_cut, cast_id
@@ -24,12 +25,14 @@ class GeoGraph(nx.Graph):
     *instance methods*
 
     - `insert_node`
+    - `project_node`
     - `to_geopandas_edgelist`
     - `to_geopandas_nodelist`
     - `plot`
     - `explore`
     - `find_nearest_edge`
     - `find_nearest_node`
+    - `weight_extend`
 
     """
 
@@ -48,6 +51,36 @@ class GeoGraph(nx.Graph):
         super().__init__(incoming_graph_data, **attr)
         if 'crs' not in self.graph:
             self.graph['crs'] = None
+
+    def project_node(self, add_node, graph, radius, att_edge):
+        '''Add a LineString edge between 'add_node' and the nearest node of 'graph'. The LineString length has to be lower than radius
+
+        Parameters
+        ----------
+
+        add_node: id
+            Id of the node to project.
+        att_edge: dict
+            Attributes of the added edge.
+        graph: GeoGraph
+            Graph to connect to the add_node.
+        radius : float
+            Maximum distance between add_node and graph.
+
+        Returns
+        -------
+
+        dist: float
+            Distance between add_node and graph (None if distance > radius).
+          '''
+        geo_st = self.nodes[add_node]['geometry'].centroid
+        id_node = graph.find_nearest_node(geo_st, radius) # recherche d'un noeud à moins de 3 km
+        if not id_node:
+            return None
+        dis1 = geo_st.distance(graph.nodes[id_node]['geometry'])
+        geo1 = LineString([graph.nodes[id_node]['geometry'], geo_st])
+        self.add_edge(id_node, add_node, **(att_edge | {'geometry':geo1, 'weight': dis1})) # ajout du lien entre la station et le noeud routier
+        return dis1
 
     def insert_node(self, geom, id_node, id_edge, att_node={}, adjust=False):
         """Cut an edge in two edges and insert a new node between each.
@@ -219,7 +252,6 @@ class GeoGraph(nx.Graph):
             gdf_ed, max_distance=max_distance, distance_col='weight')
         if len(troncons):
             troncon = troncons.sort_values(by='weight').iloc[0]
-
             return [cast_id(troncon['source']), cast_id(troncon['target'])]
         return None
 
@@ -253,6 +285,67 @@ class GeoGraph(nx.Graph):
             return cast_id(noeud['node_id'])
         return None
 
+    def weight_extend(self, edge, ext_gr, radius=None, n_attribute=None):
+        '''Find the path (witch contains edge) between nodes included in a projected graph and with minimal weight.
+
+        Parameters
+        ----------
+        edge : tuple
+            Edge to extend in the projected graph.
+        ext_gr : Graph
+            Projected Graph
+        radius : float (default None)
+            radius used to find the nearest external node for each node of the edge.
+            If None, the radius used is the weight of the edge 
+        n_attribute : int or str (default None)
+            Node attribute to store node projected distance
+        Returns
+        -------
+        float
+            extended weight  
+        '''
+        dist_ext = self.edges[edge]['weight']
+        radius = max(dist_ext, radius) if radius else dist_ext
+        for node in edge:
+            if n_attribute in self.nodes[node] and self.nodes[node][n_attribute]:
+                dist_st = self.nodes[node][n_attribute]
+            else:
+                dist_st = self.weight_node_to_graph(node, ext_gr, radius=radius, attribute=n_attribute)
+            if not dist_st:
+                return None
+            dist_ext += dist_st 
+        return dist_ext
+
+    def weight_node_to_graph(self, node, ext_gr, radius=None, attribute=None):
+        '''Return the distance between a node and a projected graph.
+
+        Parameters
+        ----------
+        node : int or str
+            Origin of the distance measure.
+        ext_gr : Graph
+            Projected Graph
+        radius : float (default None)
+            value used to filter projected nodes before analyse.
+            If None, all the projected graph is used. 
+        attribute : int or str (default None)
+            Node attribute to store resulted distance
+        Returns
+        -------
+        float
+            distance between the node and the projected graph  
+        '''
+        if radius:
+            ego_gr = nx.ego_graph(self, node, radius=radius, distance='weight').nodes
+            near_gr = [nd for nd in ego_gr if nd in ext_gr and nd != node]
+        else:
+            near_gr = ext_gr
+        dist_st = [nx.shortest_path_length(self, source=node, target=nd, weight='weight') for nd in near_gr]
+        dist = None if not dist_st else min(dist_st)
+        if dist and attribute:
+            self.nodes[node][attribute] = dist
+        return  dist
 
 class GeoGraphError(Exception):
     """GeoGraph Exception"""
+ 
