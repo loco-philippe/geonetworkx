@@ -6,8 +6,6 @@ Geo-NX extends NetworkX operations to allow operations on geometric types.
 
 *The Geo-NX package was created as part of the [Qualicharge](https://github.com/MTES-MCT/qualicharge) project*
 
-*The GeoNetworkX package was created as part of the [Qualicharge](https://github.com/MTES-MCT/qualicharge) project*
-
 ## Description
 
 Geo-NX combines the capabilities of NetworkX, GeoPandas and shapely :

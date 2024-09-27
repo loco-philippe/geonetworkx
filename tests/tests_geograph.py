@@ -8,10 +8,10 @@ import unittest
 
 from shapely import LineString, Point
 import geopandas as gpd
-import geonetworkx as gnx 
+import geo_nx as gnx 
 import networkx as nx 
 import pandas as pd
-import geonetworkx.utils as utils
+import geo_nx.utils as utils
 from networkx.utils import graphs_equal
 
 paris = Point(2.3514, 48.8575)
