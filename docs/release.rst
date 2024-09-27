@@ -1,15 +1,16 @@
 Versions
 ========
 
-[0.1.0](https://loco-labs.github.io/geo_nx/v0_1_0/intro.html) (2024-09-27)
+0.1.0 (2024-09-27)
 ------------------
-- doc: 
+- doc: https://loco-labs.github.io/geo_nx/v0_1_0/intro.html
 - GeoGraph (project_node, weight_extend, weight_node_to_graph)
 - graph function (project_graph)
 - 'example_afir'
 
-[0.0.1](https://loco-labs.github.io/geo_nx/v0_0_1/intro.html) (2024-09-05)
+0.0.1 (2024-09-05)
 ------------------
+- https://loco-labs.github.io/geo_nx/v0_0_1/intro.html
 - First version
 - conversion GeoGraph <-> GeoDataFrame
 - geometrical functions (geo_cut, geom_to_crs, add_geometry_edges_from_nodes, nodes_gdf_from_edges_gdf)
