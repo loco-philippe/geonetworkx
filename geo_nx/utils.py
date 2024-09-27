@@ -11,7 +11,7 @@ WEIGHT = 'weight'
 
 
 def geo_cut(line, geom, adjust=False):
-    ''' Cuts a line in two at the geometry nearest projection point
+    '''Cuts a line in two at the geometry nearest projection point
 
     Parameters
     ----------
@@ -145,7 +145,7 @@ def geom_to_crs(geom, crs, new_crs):
     -------
     Shapely geometry
        Geometry with coordinates defined in the new CRS.
-'''
+    '''
     return gpd.GeoSeries([geom], crs=crs).to_crs(new_crs)[0]
 
 

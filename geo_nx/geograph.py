@@ -12,14 +12,18 @@ from geo_nx.convert import to_geopandas_edgelist
 from geo_nx.convert import to_geopandas_nodelist
 from geo_nx.utils import geo_cut, cast_id
 
+GEOM = 'geometry'
+WEIGHT = 'weight'
+NODE_ID = 'node_id'
+
 
 class GeoGraph(nx.Graph):
     """This class analyses geospatial graphs.
-    
+
     A geospatial graph is a graph where nodes and edges are related to a geometry.
-    
+
     A GeoGraph is a NetworkX Graph with a shapely geometry as egde attribute and node attribute.
-    
+
     The GeoGraph 'crs' attribute defines the coordinate reference used.
 
     *instance methods*
@@ -73,13 +77,13 @@ class GeoGraph(nx.Graph):
         dist: float
             Distance between add_node and graph (None if distance > radius).
           '''
-        geo_st = self.nodes[add_node]['geometry'].centroid
+        geo_st = self.nodes[add_node][GEOM].centroid
         id_node = graph.find_nearest_node(geo_st, radius) # recherche d'un noeud à moins de 3 km
         if not id_node:
             return None
-        dis1 = geo_st.distance(graph.nodes[id_node]['geometry'])
-        geo1 = LineString([graph.nodes[id_node]['geometry'], geo_st])
-        self.add_edge(id_node, add_node, **(att_edge | {'geometry':geo1, 'weight': dis1})) # ajout du lien entre la station et le noeud routier
+        dis1 = geo_st.distance(graph.nodes[id_node][GEOM])
+        geo1 = LineString([graph.nodes[id_node][GEOM], geo_st])
+        self.add_edge(id_node, add_node, **(att_edge | {GEOM:geo1, WEIGHT: dis1})) # ajout du lien entre la station et le noeud routier
         return dis1
 
     def insert_node(self, geom, id_node, id_edge, att_node={}, adjust=False):
@@ -114,20 +118,20 @@ class GeoGraph(nx.Graph):
         This method is available only with LineString as edge geometry.
         """
         att_edge = self.edges[*id_edge]
-        new_geo = geo_cut(att_edge['geometry'], geom, adjust=adjust)
+        new_geo = geo_cut(att_edge[GEOM], geom, adjust=adjust)
         if not new_geo:
             return None
         geo1, geo2, intersect, dist = new_geo
 
-        edg_0 = self.nodes[id_edge[0]]['geometry'].coords[0]
+        edg_0 = self.nodes[id_edge[0]][GEOM].coords[0]
         first = id_edge[0] if edg_0 == geo1.coords[0] else id_edge[1]
         last = id_edge[1] if first == id_edge[0] else id_edge[0]
 
-        self.add_node(id_node, **(att_node | {'geometry': intersect}))
+        self.add_node(id_node, **(att_node | {GEOM: intersect}))
         self.add_edge(first, id_node, **(att_edge |
-                      {'geometry': geo1, 'weight': geo1.length}))
+                      {GEOM: geo1, WEIGHT: geo1.length}))
         self.add_edge(id_node, last, **(att_edge |
-                      {'geometry': geo2, 'weight': geo2.length}))
+                      {GEOM: geo2, WEIGHT: geo2.length}))
         self.remove_edge(*id_edge)
 
         return dist
@@ -230,7 +234,7 @@ class GeoGraph(nx.Graph):
 
         Spatial join based on the distance between given geometry and edges geometries.
 
-        Results will include a single output records (even in case of multiple 
+        Results will include a single output records (even in case of multiple
         nearest and equidistant geometries).
 
         Parameters
@@ -246,12 +250,12 @@ class GeoGraph(nx.Graph):
             id of the nearest edge (list of two id_node)
         '''
         gdf_pt = gpd.GeoDataFrame(
-            {'geometry': [geom.centroid]}, crs=self.graph['crs'])
+            {GEOM: [geom.centroid]}, crs=self.graph['crs'])
         gdf_ed = self.to_geopandas_edgelist()
         troncons = gdf_pt.sjoin_nearest(
-            gdf_ed, max_distance=max_distance, distance_col='weight')
+            gdf_ed, max_distance=max_distance, distance_col=WEIGHT)
         if len(troncons):
-            troncon = troncons.sort_values(by='weight').iloc[0]
+            troncon = troncons.sort_values(by=WEIGHT).iloc[0]
             return [cast_id(troncon['source']), cast_id(troncon['target'])]
         return None
 
@@ -260,7 +264,7 @@ class GeoGraph(nx.Graph):
 
         Spatial join based on the distance between given geometry and nodes geometries.
 
-        Results will include a single output records (even in case of multiple 
+        Results will include a single output records (even in case of multiple
         nearest and equidistant geometries).
 
         Parameters
@@ -276,13 +280,13 @@ class GeoGraph(nx.Graph):
             id of the nearest edge (list of two id_node)
         '''
         gdf_pt = gpd.GeoDataFrame(
-            {'geometry': [geom.centroid]}, crs=self.graph['crs'])
+            {GEOM: [geom.centroid]}, crs=self.graph['crs'])
         gdf_no = self.to_geopandas_nodelist()
         noeuds = gdf_pt.sjoin_nearest(
-            gdf_no, max_distance=max_distance, distance_col='weight')
+            gdf_no, max_distance=max_distance, distance_col=WEIGHT)
         if len(noeuds):
-            noeud = noeuds.sort_values(by='weight').iloc[0]
-            return cast_id(noeud['node_id'])
+            noeud = noeuds.sort_values(by=WEIGHT).iloc[0]
+            return cast_id(noeud[NODE_ID])
         return None
 
     def weight_extend(self, edge, ext_gr, radius=None, n_attribute=None, n_active=None):
@@ -304,19 +308,19 @@ class GeoGraph(nx.Graph):
         Returns
         -------
         float
-            extended weight  
+            extended weight
         '''
-        dist_ext = self.edges[edge]['weight']
+        dist_ext = self.edges[edge][WEIGHT]
         radius = max(dist_ext, radius) if radius else dist_ext
         for node in edge:
             if n_attribute in self.nodes[node] and self.nodes[node][n_attribute]:
                 dist_st = self.nodes[node][n_attribute]
             else:
-                dist_st = self.weight_node_to_graph(node, ext_gr, radius=radius, 
+                dist_st = self.weight_node_to_graph(node, ext_gr, radius=radius,
                                                     attribute=n_attribute, active=n_active)
             if not dist_st:
                 return None
-            dist_ext += dist_st 
+            dist_ext += dist_st
         return dist_ext
 
     def weight_node_to_graph(self, node, ext_gr, radius=None, attribute=None, active=None):
@@ -330,7 +334,7 @@ class GeoGraph(nx.Graph):
             Projected Graph
         radius : float (default None)
             value used to filter projected nodes before analyse.
-            If None, all the projected graph is used. 
+            If None, all the projected graph is used.
         attribute : int or str (default None)
             Node attribute to store resulted distance
         active : str (default None)
@@ -338,15 +342,16 @@ class GeoGraph(nx.Graph):
         Returns
         -------
         float
-            distance between the node and the projected graph  
+            distance between the node and the projected graph
         '''
         if radius:
-            ego_gr = nx.ego_graph(self, node, radius=radius, distance='weight').nodes
-            near_gr = [nd for nd in ego_gr if nd in ext_gr and nd != node and 
+            ego_gr = nx.ego_graph(self, node, radius=radius, distance=WEIGHT).nodes
+            near_gr = [nd for nd in ego_gr if nd in ext_gr and nd != node and
                        (active not in self.nodes[nd] or self.nodes[nd][active])]
         else:
             near_gr = ext_gr
-        dist_st = [nx.shortest_path_length(self, source=node, target=nd, weight='weight') for nd in near_gr]
+        dist_st = [nx.shortest_path_length(self, source=node, target=nd, weight=WEIGHT) 
+                   for nd in near_gr]
         dist = None if not dist_st else min(dist_st)
         if dist and attribute:
             self.nodes[node][attribute] = dist
@@ -354,4 +359,3 @@ class GeoGraph(nx.Graph):
 
 class GeoGraphError(Exception):
     """GeoGraph Exception"""
- 
