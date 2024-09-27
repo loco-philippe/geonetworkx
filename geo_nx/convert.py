@@ -21,6 +21,7 @@ from geo_nx import utils
 
 GEOM = 'geometry'
 WEIGHT = 'weight'
+NODE_ID = 'node_id'
 
 
 def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
@@ -65,8 +66,8 @@ def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
         nx_lis = [(idx, dict(item for item in row.items()))
                   for idx, row in enumerate(dic)]
     else:
-        nx_lis = [(row[node_id], dict(item for item in row.items() if item[0] != node_id and not (
-            isinstance(item[1], float) and math.isnan(item[1])))) for row in dic]
+        nx_lis = [(row[node_id], dict(item for item in row.items() if item[0] != node_id and not (isinstance(item[1], float) and math.isnan(item[1]))))
+                  for row in dic]
     geo_gr = nx.empty_graph(nx_lis)
     return gnx.GeoGraph(geo_gr, crs=node_gdf.crs)
 
@@ -126,7 +127,7 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
             new_edge_attr = [GEOM, WEIGHT]
 
     if n_gdf_ok and GEOM in n_gdf and not GEOM in e_gdf:
-        node_id = node_id if node_id else 'node_id'
+        node_id = node_id if node_id else NODE_ID
         e_gdf = utils.add_geometry_edges_from_nodes(
             e_gdf, source, target, n_gdf, node_id)
     elif not n_gdf_ok:
@@ -199,10 +200,11 @@ def to_geopandas_nodelist(graph, node_id='node_id', nodelist=None):
 
 
 def project_graph(nodes_src, target, radius, node_attr, edge_attr):
-    '''Projection of a list of nodes into a graph. 
-    
-    The projection create a new graph where nodes are the nodes to project and edges are LineString between a node to project and the nearest node in the graph.
-    
+    '''Projection of a list of nodes into a graph.
+
+    The projection create a new graph where nodes are the nodes to project and 
+    edges are LineString between a node to project and the nearest node in the graph.
+
     Parameters
     ----------
     nodes_src : GeoDataFrame
@@ -216,9 +218,9 @@ def project_graph(nodes_src, target, radius, node_attr, edge_attr):
 
     node_attr : list of string
         Nodes attributes to add in the new graph.
-    
+
     edge_attr : dict
-        The dict is added as an edge attribute to each edge created 
+        The dict is added as an edge attribute to each edge created
 
     Returns
     -------
@@ -226,19 +228,21 @@ def project_graph(nodes_src, target, radius, node_attr, edge_attr):
        The GeoGraph is the garph created.
        The GeoDataFrame is the nodes_src with non projected nodes.
     '''
-    target['geom_right'] = target['geometry']
-    joined = gpd.sjoin_nearest(nodes_src, target, how='left', max_distance=radius, distance_col='weight')
-    joined = joined[pd.notna(joined['weight'])]
+    target['geom_right'] = target[GEOM]
+    joined = gpd.sjoin_nearest(
+        nodes_src, target, how='left', max_distance=radius, distance_col=WEIGHT)
+    joined = joined[pd.notna(joined[WEIGHT])]
     nodes_src_other = nodes_src[~nodes_src.index.isin(joined.index)]
-    
-    gs_nodes = joined[node_attr + ['geometry', 'node_id_left', ]].rename(columns={"node_id_left": "node_id"})
-    gs_edges = joined[['node_id_left', 'node_id_right', 'weight', 'geometry']]
-    gs_edges = gs_edges.rename(columns={"node_id_left": "source", "node_id_right": "target"})
-    gs_edges['geometry'] = gpd.GeoSeries(gs_edges['geometry']).shortest_line(gpd.GeoSeries(joined['geom_right']))
+
+    gs_nodes = joined[node_attr + [GEOM, 'node_id_left', ]
+                      ].rename(columns={"node_id_left": NODE_ID})
+    gs_edges = joined[['node_id_left', 'node_id_right', WEIGHT, GEOM]]
+    gs_edges = gs_edges.rename(
+        columns={"node_id_left": "source", "node_id_right": "target"})
+    gs_edges[GEOM] = gpd.GeoSeries(gs_edges[GEOM]).shortest_line(
+        gpd.GeoSeries(joined['geom_right']))
     for key, value in edge_attr.items():
         gs_edges[key] = value
-    print(gs_edges)
-    print(gs_nodes)
-    gs = gnx.from_geopandas_edgelist(gs_edges, edge_attr=True, node_gdf=gs_nodes, node_id='node_id', node_attr=node_attr)
-    print(gs.edges)
+    gs = gnx.from_geopandas_edgelist(
+        gs_edges, edge_attr=True, node_gdf=gs_nodes, node_id=NODE_ID, node_attr=node_attr)
     return (gs, nodes_src_other)

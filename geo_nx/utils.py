@@ -2,10 +2,8 @@
 """
 Functions used for geometry analysis
 """
-# import shapely
 from shapely import LineString, Point
 import pandas as pd
-# import numpy as np
 import geopandas as gpd
 
 GEOM = 'geometry'
@@ -38,7 +36,6 @@ def geo_cut(line, geom, adjust=False):
     absc = line.project(point)
     if absc <= 0.0 or absc >= line.length:
         return None
-    # print('cut : ', absc, point, line)
     coords = list(line.coords)
     for ind, coord in enumerate(coords):
         pt_absc = line.project(Point(coord))
