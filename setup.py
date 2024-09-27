@@ -11,8 +11,8 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="geo_nx",
-    version="0.0.1",
-    description="Geo-NX : Geospatial network analysis",
+    version="0.1.0",
+    description="Geo-NX : Geospatial Network Analysis",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/loco-labs/geo_nx/blob/main/README.md",
