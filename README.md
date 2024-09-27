@@ -1,6 +1,6 @@
-# Geo-NX : Geospatial Network Analysis <img src="./docs/geo_nx.png" alt="geo_nx" style="float:right;width:100px;height:90px;">
+# Geo-NX : Geospatial Network Analysis <img src="https://github.com/loco-labs/geo_nx/blob/main/docs/geo_nx.png" alt="geo_nx" style="float:right;width:100px;height:90px;">
 
-Geo-NX is a Python package for the creation, manipulation, and study of geospatial networks.
+Geo-NX is a [Python package](https://github.com/loco-labs/geo_nx) for the creation, manipulation, and study of geospatial networks.
 
 Geo-NX extends NetworkX operations to allow operations on geometric types.
 
