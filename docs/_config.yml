@@ -2,8 +2,8 @@
 # Learn more at https://jupyterbook.org/customize/config.html
 
 title: User guide
-author: GeoNetworkX Community - V0.0.1
-logo: ./geonetworkx.png
+author: Geo-NX Community - V0.1.0
+logo: ./geo_nx.png
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
@@ -42,4 +42,4 @@ sphinx:
   - 'autoapi.extension'
   config:
     autosummary_generate: True
-    autoapi_dirs: ['../geonetworkx']
+    autoapi_dirs: ['../geo_nx']

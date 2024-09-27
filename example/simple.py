@@ -3,8 +3,8 @@
 from shapely import LineString, Point
 import numpy as np
 import geopandas as gpd
-import geonetworkx as gnx
-from geonetworkx import geom_to_crs
+import geo_nx as gnx
+from geo_nx import geom_to_crs
 
 paris = Point(2.3514, 48.8575)
 lyon = Point(4.8357, 45.7640)

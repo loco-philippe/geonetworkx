@@ -6,7 +6,7 @@ Created on Wed Aug 14 22:40:20 2024
 """
 from shapely import LineString, Point
 import geopandas as gpd
-import geonetworkx as gnx 
+import geo_nx as gnx 
 import networkx as nx 
 import pandas as pd
 
