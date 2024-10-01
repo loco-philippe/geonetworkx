@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 15 10:59:39 2024
-
-@author: a lab in the Air
+Test geo_nx
 """
 import unittest
 
