@@ -86,6 +86,9 @@ class GeoGraph(nx.Graph):
         self.add_edge(id_node, add_node, **(att_edge | {GEOM:geo1, WEIGHT: dis1})) # ajout du lien entre la station et le noeud routier
         return dis1
 
+    def merge_node(self, id_node, adjust=False):
+        return
+        
     def insert_node(self, geom, id_node, id_edge, att_node={}, adjust=False):
         """Cut an edge in two edges and insert a new node between each.
 
