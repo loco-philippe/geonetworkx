@@ -231,7 +231,8 @@ def project_graph(nodes_src, target, radius, node_attr, edge_attr):
        The GeoGraph is the garph created.
        The GeoDataFrame is the nodes_src with non projected nodes.
     '''
-    target = target[[GEOM, NODE_ID]]
+    
+    target = target[[GEOM, NODE_ID]].copy()
     target['geom_right'] = target[GEOM]
     joined = gpd.sjoin_nearest(
         nodes_src, target, how='left', max_distance=radius, distance_col=WEIGHT)
