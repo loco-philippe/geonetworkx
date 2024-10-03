@@ -56,16 +56,14 @@ class GeoGraph(nx.Graph):
         if 'crs' not in self.graph:
             self.graph['crs'] = None
 
-    def project_node(self, add_node, graph, radius, att_edge):
-        '''Add a LineString edge between 'add_node' and the nearest node of 'graph'. The LineString length has to be lower than radius
+    def merge_node(self, add_node, graph, radius):
+        '''Find the nearest node of 'graph' and update attr
 
         Parameters
         ----------
 
         add_node: id
             Id of the node to project.
-        att_edge: dict
-            Attributes of the added edge.
         graph: GeoGraph
             Graph to connect to the add_node.
         radius : float
@@ -82,11 +80,47 @@ class GeoGraph(nx.Graph):
         if not id_node:
             return None
         dis1 = geo_st.distance(graph.nodes[id_node][GEOM])
-        geo1 = LineString([graph.nodes[id_node][GEOM], geo_st])
-        self.add_edge(id_node, add_node, **(att_edge | {GEOM:geo1, WEIGHT: dis1})) # ajout du lien entre la station et le noeud routier
+        graph.add_node(id_node, **self.nodes[add_node])
         return dis1
 
-    def merge_node(self, id_node, adjust=False):
+    def project_node(self, add_node, graph, radius, att_edge=None, update_node=False):
+        '''Add an external node in a Graph (update the nearest node of 'graph' or add a 
+        LineString edge between 'add_node' and the nearest node of 'graph'. 
+        The LineString length has to be lower than radius.
+
+        Parameters
+        ----------
+
+        add_node: id
+            Id of the node to project.
+        att_edge: dict
+            Attributes of the added edge.
+        graph: GeoGraph
+            Graph to connect to the add_node.
+        radius: float
+            Maximum distance between add_node and graph.
+        update_node: boolean
+            If True, 
+        Returns
+        -------
+
+        dist: float
+            Distance between add_node and graph (None if distance > radius).
+          '''
+        att_edge = {} if not att_edge else att_edge
+        geo_st = self.nodes[add_node][GEOM].centroid
+        id_node = graph.find_nearest_node(geo_st, radius) # recherche du noeud proche
+        if not id_node:
+            return None
+        dis1 = geo_st.distance(graph.nodes[id_node][GEOM])
+        if update_node:
+            graph.add_node(id_node, **(self.nodes[add_node] | {GEOM:graph.nodes[id_node][GEOM]}))            
+        else:
+            geo1 = LineString([graph.nodes[id_node][GEOM], geo_st])
+            self.add_edge(id_node, add_node, **(att_edge | {GEOM:geo1, WEIGHT: dis1})) # ajout du lien entre la station et le noeud routier
+        return dis1
+    
+    def erase_node(self, id_node, adjust=False):
         return
         
     def insert_node(self, geom, id_node, id_edge, att_node={}, adjust=False):
@@ -222,10 +256,10 @@ class GeoGraph(nx.Graph):
         elif refmap is None:
             refmap = folium.Map()
 
-        if edges:
+        if edges and self.edges:
             self.to_geopandas_edgelist(
                 nodelist=nodelist).explore(m=refmap, **edge_param)
-        if nodes:
+        if nodes and self.nodes:
             self.to_geopandas_nodelist(
                 nodelist=nodelist).explore(m=refmap, **node_param)
         if layercontrol:
