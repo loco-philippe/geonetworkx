@@ -83,9 +83,11 @@ class GeoGraph(nx.Graph):
         graph.add_node(id_node, **self.nodes[add_node])
         return dis1
 
-    def project_node(self, add_node, graph, radius, att_edge=None, update_node=False):
-        '''Add an external node in a Graph (update the nearest node of 'graph' or add a 
-        LineString edge between 'add_node' and the nearest node of 'graph'. 
+    def project_node(self, add_node, graph, radius, att_edge=None, update_node=False, target_node=None):
+        '''Add an external node in a Graph.
+        
+        Update the nearest node of 'graph' or 
+        add a LineString edge between 'add_node' and the nearest node of 'graph'. 
         The LineString length has to be lower than radius.
 
         Parameters
@@ -93,6 +95,8 @@ class GeoGraph(nx.Graph):
 
         add_node: id
             Id of the node to project.
+        target_node: id
+            Id of the graph node to project add_node. If None, the nearest is used.
         att_edge: dict
             Attributes of the added edge.
         graph: GeoGraph
@@ -100,7 +104,9 @@ class GeoGraph(nx.Graph):
         radius: float
             Maximum distance between add_node and graph.
         update_node: boolean
-            If True, 
+            If True, the nearest node is updated with 'add_node' attributes.
+            If False, a LineString edge is added.
+            
         Returns
         -------
 
@@ -109,7 +115,7 @@ class GeoGraph(nx.Graph):
           '''
         att_edge = {} if not att_edge else att_edge
         geo_st = self.nodes[add_node][GEOM].centroid
-        id_node = graph.find_nearest_node(geo_st, radius) # recherche du noeud proche
+        id_node = target_node if target_node else graph.find_nearest_node(geo_st, radius)
         if not id_node:
             return None
         dis1 = geo_st.distance(graph.nodes[id_node][GEOM])
