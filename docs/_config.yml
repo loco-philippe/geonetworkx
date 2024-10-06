@@ -2,7 +2,7 @@
 # Learn more at https://jupyterbook.org/customize/config.html
 
 title: User guide
-author: Geo-NX Community - V0.1.0
+author: Geo-NX Community - V0.2.0
 logo: ./geo_nx.png
 
 # Force re-execution of notebooks on each build.

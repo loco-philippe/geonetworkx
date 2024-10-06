@@ -9,6 +9,71 @@ import geopandas as gpd
 GEOM = 'geometry'
 WEIGHT = 'weight'
 
+def geo_merge(geo1, geo2, adjust=True):
+    '''Merge two LineString or Point in a single LineString or Point
+    
+    Parameters
+    ----------
+    
+    - geo1: shapely LineString or Point
+        Geometry to merge.
+    - geo2: shapely LineString or Point
+        Geometry to merge.
+    - adjust: boolean (default True)
+        If False, the result is None if the boundaries are disjoint. 
+    
+    Returns
+    -------
+    - LineString
+        
+    '''
+    if geo1.geom_type == 'Point':
+        geo1, geo2 = geo2, geo1
+    coord1 = list(geo1.coords)
+    coord2 = list(geo2.coords)
+    dis = [Point(coord2[-1]).distance(Point(coord1[0])),
+           Point(coord1[-1]).distance(Point(coord2[0])),
+           Point(coord1[0]).distance(Point(coord2[0])),
+           Point(coord1[-1]).distance(Point(coord2[-1]))]
+    min_dis = min(dis)
+    match (geo1.geom_type, geo2.geom_type, geo1.distance(geo2), adjust):
+        case ('Point', 'Point', 0.0, _):
+            return geo1
+        case ('Point', 'Point', _, False):
+            return None
+        case ('Point', 'Point', _, _):
+            return LineString([geo1, geo2])
+        case ('LineString', 'Point', 0.0, _):
+            return geo1
+        case ('LineString', 'Point', _, False):
+            return None
+        case ('LineString', 'Point', _, _):
+            if geo2.distance(Point(coord1[0])) < geo2.distance(Point(coord1[-1])):
+                return LineString(coord2 + coord1)
+            return LineString(coord1 + coord2)
+        case ('LineString', 'LineString', 0.0, _):
+            if dis[0] == 0.0:
+                return LineString(coord2 + coord1[1:])
+            if dis[1] == 0.0:
+                return LineString(coord1 + coord2[1:])
+            if dis[2] == 0.0:
+                return LineString(coord1[-1::-1] + coord2[1:])
+            if dis[3] == 0.0:
+                return LineString(coord1[:-1] + coord2[-1::-1])   
+            return None    
+        case ('LineString', 'LineString', _, False):
+            return None
+        case ('LineString', 'LineString', _, _):
+            if dis[0] == min_dis:
+                return LineString(coord2 + coord1)
+            if dis[1] == min_dis:
+                return LineString(coord1 + coord2)
+            if dis[2] == min_dis:
+                return LineString(coord1[-1::-1] + coord2)
+            if dis[3] == min_dis:
+                return LineString(coord1 + coord2[-1::-1])  
+        case _:
+            return None
 
 def geo_cut(line, geom, adjust=False):
     '''Cuts a line in two at the geometry nearest projection point

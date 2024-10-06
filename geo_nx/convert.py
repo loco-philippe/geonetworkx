@@ -192,7 +192,10 @@ def to_geopandas_nodelist(graph, node_id='node_id', nodelist=None):
     GeoDataFrame
        Graph node list.
     """
-    nodes = pd.DataFrame.from_records(np.array(graph.nodes.data())[:, 1])
+    data = np.array(graph.nodes.data())
+    if not len(data):
+        return None
+    nodes = pd.DataFrame.from_records(data[:, 1])
     nodes[node_id] = pd.Series(list(graph.nodes))
     if nodelist:
         nodes = nodes.set_index(node_id).loc[nodelist].reset_index()
@@ -203,7 +206,7 @@ def project_graph(nodes_src, target, radius, node_attr, edge_attr):
     '''Projection of a list of nodes into a graph.
 
     The projection create a new graph where nodes are the nodes to project and 
-    edges are LineString between a node to project and the nearest node in the graph.
+    edges are LineString between nodes to project and the nearest node in the graph.
 
     Parameters
     ----------
@@ -228,6 +231,8 @@ def project_graph(nodes_src, target, radius, node_attr, edge_attr):
        The GeoGraph is the garph created.
        The GeoDataFrame is the nodes_src with non projected nodes.
     '''
+    
+    target = target[[GEOM, NODE_ID]].copy()
     target['geom_right'] = target[GEOM]
     joined = gpd.sjoin_nearest(
         nodes_src, target, how='left', max_distance=radius, distance_col=WEIGHT)

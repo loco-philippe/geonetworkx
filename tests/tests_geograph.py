@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 15 10:59:39 2024
-
-@author: a lab in the Air
+Test geo_nx
 """
 import unittest
 
@@ -52,6 +50,26 @@ class TestUtils(unittest.TestCase):
         for test in tests3:
             self.assertTrue(utils.cast_id(test, True) in (None, [1]))
             self.assertTrue(utils.cast_id(test, True) in (None, [1]))
-            
+
+    def test_geo_merge(self):
+        """ test geo_merge function"""
+        l1 = LineString([(0,0), (1,1), (2,2)])            
+        l1r = LineString([(2,2), (1,1), (0,0)])     
+        l1s = LineString([(3,3), (4,4), (5,5)])    
+        l1jr = LineString([(0,0), (6,6)])            
+        l1j = LineString([(-1,-1), (0,0)])            
+        l1c = LineString([(0, 2), (2, 0)])    
+        pt1 = Point((1.5, 1.5))
+        pt1e = Point((1.5, 2.5))
+        self.assertTrue(utils.geo_merge(l1, l1r) is not None)
+        self.assertTrue(utils.geo_merge(l1j, l1c) is not None)
+        self.assertTrue(utils.geo_merge(l1s, l1jr) is None)
+        self.assertTrue(utils.geo_merge(l1s, l1j, False) is None)
+        self.assertEqual(utils.geo_merge(pt1, pt1), pt1)
+        self.assertEqual(utils.geo_merge(l1, l1s), utils.geo_merge(l1r, l1s))
+        self.assertEqual(utils.geo_merge(l1, pt1), l1)
+        self.assertEqual(utils.geo_merge(pt1e, pt1), LineString([pt1, pt1e]))
+        self.assertTrue(utils.geo_merge(pt1e, pt1, False) is None)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
