@@ -11,7 +11,7 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="geo_nx",
-    version="0.1.0",
+    version="0.2.0",
     description="Geo-NX : Geospatial Network Analysis",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -28,5 +28,5 @@ setup(
     keywords="network, geographic, geospatial, open data",
     packages=find_packages(include=["geo_nx", "geo_nx.*"]),
     python_requires=">=3.11, <4",
-    install_requires=[],
+    install_requires=["shapely", "geopandas"]
 )

@@ -1,6 +1,12 @@
 Versions
 ========
 
+0.2.0 (2024-10-06)
+------------------
+- doc: https://loco-labs.github.io/geo_nx/v0_2_0/intro.html
+- GeoGraph (merge_node)
+- 'example_afir_V4'
+
 0.1.0 (2024-09-27)
 ------------------
 - doc: https://loco-labs.github.io/geo_nx/v0_1_0/intro.html

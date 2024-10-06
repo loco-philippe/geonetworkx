@@ -83,11 +83,12 @@ class GeoGraph(nx.Graph):
         graph.add_node(id_node, **self.nodes[add_node])
         return dis1
 
-    def project_node(self, add_node, graph, radius, att_edge=None, update_node=False, target_node=None):
+    def project_node(self, add_node, graph, radius, att_edge=None, update_node=False, 
+                     target_node=None):
         '''Add an external node in a Graph.
-        
-        Update the nearest node of 'graph' or 
-        add a LineString edge between 'add_node' and the nearest node of 'graph'. 
+
+        Update the nearest node of 'graph' or
+        add a LineString edge between 'add_node' and the nearest node of 'graph'.
         The LineString length has to be lower than radius.
 
         Parameters
@@ -106,7 +107,7 @@ class GeoGraph(nx.Graph):
         update_node: boolean
             If True, the nearest node is updated with 'add_node' attributes.
             If False, a LineString edge is added.
-            
+
         Returns
         -------
 
@@ -120,16 +121,17 @@ class GeoGraph(nx.Graph):
             return None
         dis1 = geo_st.distance(graph.nodes[id_node][GEOM])
         if update_node:
-            graph.add_node(id_node, **(self.nodes[add_node] | {GEOM:graph.nodes[id_node][GEOM]}))            
+            graph.add_node(id_node, **(self.nodes[add_node] | {GEOM:graph.nodes[id_node][GEOM]}))
         else:
             geo1 = LineString([graph.nodes[id_node][GEOM], geo_st])
-            self.add_edge(id_node, add_node, **(att_edge | {GEOM:geo1, WEIGHT: dis1})) # ajout du lien entre la station et le noeud routier
+            self.add_edge(id_node, add_node, **(att_edge | {GEOM:geo1, WEIGHT: dis1})) 
         return dis1
-    
+
     def erase_node(self, id_node, adjust=False):
+        "to be define"
         return
-        
-    def insert_node(self, geom, id_node, id_edge, att_node={}, adjust=False):
+
+    def insert_node(self, geom, id_node, id_edge, att_node=None, adjust=False):
         """Cut an edge in two edges and insert a new node between each.
 
         The 'geometry' attribute of the two edges and the new node is build from the geometry of
@@ -140,7 +142,7 @@ class GeoGraph(nx.Graph):
 
         id_node: id
             Id of the inserted node.
-        att_node: dict
+        att_node: dict (default None)
             Attributes of the inserted node.
         id_edge: tuple of two id_node
             Id of the cuted edge.
@@ -161,6 +163,7 @@ class GeoGraph(nx.Graph):
         This method is available only with LineString as edge geometry.
         """
         att_edge = self.edges[*id_edge]
+        att_node = att_node if att_node else {}
         new_geo = geo_cut(att_edge[GEOM], geom, adjust=adjust)
         if not new_geo:
             return None
@@ -333,7 +336,8 @@ class GeoGraph(nx.Graph):
         return None
 
     def weight_extend(self, edge, ext_gr, radius=None, n_attribute=None, n_active=None):
-        '''Find the path (witch contains edge) between nodes included in a projected graph and with minimal weight.
+        '''Find the path (witch contains edge) between nodes included in 
+        a projected graph and with minimal weight.
 
         Parameters
         ----------
@@ -393,7 +397,7 @@ class GeoGraph(nx.Graph):
                        (active not in self.nodes[nd] or self.nodes[nd][active])]
         else:
             near_gr = ext_gr
-        dist_st = [nx.shortest_path_length(self, source=node, target=nd, weight=WEIGHT) 
+        dist_st = [nx.shortest_path_length(self, source=node, target=nd, weight=WEIGHT)
                    for nd in near_gr]
         dist = None if not dist_st else min(dist_st)
         if dist and attribute:
