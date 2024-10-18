@@ -11,7 +11,7 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="geo_nx",
-    version="0.2.0",
+    version="0.3.0",
     description="Geo-NX : Geospatial Network Analysis",
     long_description=long_description,
     long_description_content_type="text/markdown",

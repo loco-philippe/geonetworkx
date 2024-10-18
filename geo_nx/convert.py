@@ -115,6 +115,7 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
     n_gdf_ok = node_gdf is not None
     e_gdf = edge_gdf.copy()
     n_gdf = node_gdf.copy() if n_gdf_ok else None
+    node_id = node_id if node_id else NODE_ID
 
     match edge_attr:
         case True:
@@ -127,7 +128,6 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
             new_edge_attr = [GEOM, WEIGHT]
 
     if n_gdf_ok and GEOM in n_gdf and not GEOM in e_gdf:
-        node_id = node_id if node_id else NODE_ID
         e_gdf = utils.add_geometry_edges_from_nodes(
             e_gdf, source, target, n_gdf, node_id)
     elif not n_gdf_ok:
