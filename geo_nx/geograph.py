@@ -37,6 +37,7 @@ class GeoGraph(nx.Graph):
     - `find_nearest_edge`
     - `find_nearest_node`
     - `weight_extend`
+    - `clean_attributes`
 
     """
 
@@ -352,6 +353,7 @@ class GeoGraph(nx.Graph):
             Node attribute to store node projected distance.
         n_active : str (default None)
             Node attribute that indicates the validity (boolean) of the node.
+
         Returns
         -------
         float
@@ -386,6 +388,7 @@ class GeoGraph(nx.Graph):
             Node attribute to store resulted distance
         active : str (default None)
             ext_gr node attribute that indicates the validity (boolean) of the node.
+
         Returns
         -------
         float
@@ -403,6 +406,34 @@ class GeoGraph(nx.Graph):
         if dist and attribute:
             self.nodes[node][attribute] = dist
         return  dist
+
+    def clean_attributes(self, nodes=True, edges=True):
+        '''remove attributes with None value
+
+        Parameters
+        ----------
+        nodes : boolean (default True)
+            Remove None attribute if True.
+        edges : boolean (default True)
+            Remove None attribute if True.
+
+        Returns
+        -------
+        None
+        '''
+        if nodes:
+            for node in self:
+                l_attr = list(self.nodes[node])
+                for attr in l_attr:
+                    if not self.nodes[node][attr]:
+                        del self.nodes[node][attr]
+        if edges:
+            for edge in self.edges:
+                l_attr = list(self.edges[edge])
+                for attr in l_attr:
+                    if not self.edges[edge][attr]:
+                        del self.edges[edge][attr]
+
 
 class GeoGraphError(Exception):
     """GeoGraph Exception"""

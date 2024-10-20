@@ -18,6 +18,7 @@ import geopandas as gpd
 import networkx as nx
 import geo_nx as gnx
 from geo_nx import utils
+from geo_nx.geograph import GeoGraphError
 
 GEOM = 'geometry'
 WEIGHT = 'weight'
@@ -228,10 +229,12 @@ def project_graph(nodes_src, target, radius, node_attr, edge_attr):
     Returns
     -------
     tuple (GeoGraph, GeoDataFrame)
-       The GeoGraph is the garph created.
+       The GeoGraph is the graph created.
        The GeoDataFrame is the nodes_src with non projected nodes.
     '''
-    
+    if not set(target[NODE_ID]).isdisjoint(set(nodes_src[NODE_ID])):
+        raise GeoGraphError('node_id of nodes_src and target have to be disjoint')
+
     target = target[[GEOM, NODE_ID]].copy()
     target['geom_right'] = target[GEOM]
     joined = gpd.sjoin_nearest(
