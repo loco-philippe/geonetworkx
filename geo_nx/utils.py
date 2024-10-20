@@ -238,3 +238,7 @@ def cast_id(node_id, only_int=False):
         return int(node_id)
     except (ValueError, TypeError):
         return None if only_int else node_id
+
+
+class GeonxError(Exception):
+    """GeoGraph Exception"""

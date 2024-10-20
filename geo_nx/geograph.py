@@ -8,8 +8,7 @@ import folium
 import networkx as nx
 import matplotlib.pyplot as plt
 from shapely import LineString
-from geo_nx.convert import to_geopandas_edgelist
-from geo_nx.convert import to_geopandas_nodelist
+from geo_nx.convert import to_geopandas_edgelist, to_geopandas_nodelist
 from geo_nx.utils import geo_cut, cast_id
 
 GEOM = 'geometry'
@@ -433,7 +432,3 @@ class GeoGraph(nx.Graph):
                 for attr in l_attr:
                     if not self.edges[edge][attr]:
                         del self.edges[edge][attr]
-
-
-class GeoGraphError(Exception):
-    """GeoGraph Exception"""

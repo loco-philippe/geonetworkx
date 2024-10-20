@@ -4,7 +4,7 @@ Operations on graphs.
 """
 
 import networkx as nx
-from geo_nx.geograph import GeoGraphError
+from geo_nx.utils import GeonxError
 
 
 def compose(geo_g, geo_h):
@@ -29,7 +29,7 @@ def compose(geo_g, geo_h):
     It is recommended that geo_g and geo_h be either both directed or both undirected.
     """
     if geo_g.graph['crs'] != geo_h.graph['crs']:
-        raise GeoGraphError(
+        raise GeonxError(
             "geo_g and geo_h must both have the same crs attribute.")
     geo_gh = nx.compose(geo_g, geo_h)
     geo_gh.graph['crs'] = geo_g.graph['crs']
