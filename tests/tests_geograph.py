@@ -33,6 +33,19 @@ class TestGeoGraph(unittest.TestCase):
         gr_simplemap2 = gnx.from_geopandas_edgelist(simple_edge, node_attr=True, node_gdf=simple_node, node_id='node_id')
         self.assertTrue(graphs_equal(gr_simplemap, gr_simplemap2))
 
+class Test_geopandas_nodelist(unittest.TestCase):
+    """tests GeoPandas convertion"""
+
+    def test_node_id(self):
+        """test 'node_id' attribute"""
+        node_gdf = gpd.GeoDataFrame({'geometry': [paris, lyon, marseille, bordeaux], 
+                                     'node_id': [10, 20, 30, 40], 
+                                     'nature': ['ville', 'ville', 'ville', 'ville']}, crs=4326).to_crs(2154) 
+        gs_noeuds = gnx.from_geopandas_nodelist(node_gdf, node_id='node_id', node_attr=True)
+        node_gdf2 = gs_noeuds.to_geopandas_nodelist()
+        gs_noeuds2 = gnx.from_geopandas_nodelist(node_gdf2, node_id='node_id', node_attr=True)
+        self.assertTrue(graphs_equal(gs_noeuds, gs_noeuds2))
+        
 class TestUtils(unittest.TestCase):
     """tests utils module"""
 
