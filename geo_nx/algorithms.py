@@ -34,3 +34,31 @@ def compose(geo_g, geo_h):
     geo_gh = nx.compose(geo_g, geo_h)
     geo_gh.graph['crs'] = geo_g.graph['crs']
     return geo_gh
+
+def compose_all(geo_list):
+    """Compose GeoGraph included in a list by combining nodes and edges into a single graph.
+
+    The node sets and edges sets do not need to be disjoint.
+
+    Composing preserves the attributes of nodes and edges.
+    Attribute values from a next GeoGraph take precedent over attribute values from the precedent.
+
+    Parameters
+    ----------
+    geo_list : list or tuple of GeoGraph
+
+    Returns
+    -------
+    A new GeoGraph with the same type and crs as geo_g
+
+    Notes
+    -----
+    The crs of GeoGraphs have to be identical.
+    It is recommended that GeoGraphs be either both directed or both undirected.
+    """
+    if not geo_list:
+        return None
+    new_geo = geo_list[0]
+    for geo in geo_list[1:]:
+        new_geo = compose(new_geo, geo)
+    return new_geo

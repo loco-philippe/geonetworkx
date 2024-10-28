@@ -336,8 +336,8 @@ class GeoGraph(nx.Graph):
         return None
 
     def weight_extend(self, edge, ext_gr, radius=None, n_attribute=None, n_active=None):
-        '''Find the path (witch contains edge) between nodes included in 
-        a projected graph and with minimal weight.
+        '''Find the weight of the the path (witch contains edge) between nodes
+        included in a projected graph and with minimal weight.
 
         Parameters
         ----------
@@ -359,7 +359,8 @@ class GeoGraph(nx.Graph):
             extended weight
         '''
         dist_ext = self.edges[edge][WEIGHT]
-        radius = max(dist_ext, radius) if radius else dist_ext
+        #radius = max(dist_ext, radius) if radius else dist_ext
+        radius = radius if radius else dist_ext
         for node in edge:
             if n_attribute in self.nodes[node] and self.nodes[node][n_attribute]:
                 dist_st = self.nodes[node][n_attribute]
