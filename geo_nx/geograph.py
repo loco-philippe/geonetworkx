@@ -9,7 +9,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from shapely import LineString
 from geo_nx.convert import to_geopandas_edgelist, to_geopandas_nodelist
-from geo_nx.utils import geo_cut, cast_id
+from geo_nx.utils import geo_cut, cast_id, geo_merge
 
 GEOM = 'geometry'
 WEIGHT = 'weight'
@@ -28,6 +28,7 @@ class GeoGraph(nx.Graph):
     *instance methods*
 
     - `insert_node`
+    - `erase_linear_nodes`
     - `project_node`
     - `to_geopandas_edgelist`
     - `to_geopandas_nodelist`
@@ -76,7 +77,7 @@ class GeoGraph(nx.Graph):
             Distance between add_node and graph (None if distance > radius).
           '''
         geo_st = self.nodes[add_node][GEOM].centroid
-        id_node = graph.find_nearest_node(geo_st, radius) # recherche d'un noeud à moins de 3 km
+        id_node = graph.find_nearest_node(geo_st, radius)
         if not id_node:
             return None
         dis1 = geo_st.distance(graph.nodes[id_node][GEOM])
@@ -127,9 +128,59 @@ class GeoGraph(nx.Graph):
             self.add_edge(id_node, add_node, **(att_edge | {GEOM:geo1, WEIGHT: dis1})) 
         return dis1
 
-    def erase_node(self, id_node, adjust=False):
-        "to be define"
-        return
+    def erase_linear_nodes(self, id_node=None, adjust=True, keep_attr=None):
+        """Remove linear nodes.
+        
+        A linear node is a node with two adjacent nodes. The two edges are replaced by 
+        a single one where:
+        - the geometry is the concatenation of the two geometries,
+        - the other attributes are merged
+        The node is removed.
+        If an edge is already existing or if somme attributes are different, the method is not applied.
+        
+        Parameters
+        ----------
+
+        id_node: None, id or list of id (default None)
+            id : Id of the node to remove
+            list of Id : list of id of nodes to remove
+            None : remove all the linear nodes
+        adjust: boolean (default True)
+            If False, the result is None if the boundaries are disjoint
+        attr: list (default None)
+            attr attributes have to be identical
+
+        Returns
+        -------
+
+        boolean
+            True if the the graph is changed.
+        """
+        len_nodes = len(self)
+        nodes = list(self.nodes) if not id_node else (
+            id_node if isinstance(id_node, list) else [id_node])
+        keep_attr = [] if not keep_attr else (
+            keep_attr if isinstance(keep_attr, list) else [keep_attr])
+        for node in nodes:
+            keep_node = False
+            adj_nodes = list(self.adj[node])
+            if len(adj_nodes) != 2 or adj_nodes in self.edges:
+                continue
+            node1, node2 = adj_nodes
+            edge1 = self.edges[node, node1]
+            edge2 = self.edges[node, node2]
+            for att in keep_attr:
+                if edge1[att] != edge2[att]:
+                    keep_node = True
+                    break
+            if keep_node:
+                continue
+            attr = edge1 | edge2
+            attr[GEOM] = geo_merge(edge1[GEOM], edge2[GEOM], adjust=adjust)
+            attr[WEIGHT] = attr[GEOM].length
+            self.add_edge(node1, node2, **attr)
+            self.remove_node(node)        
+        return len(self) != len_nodes
 
     def insert_node(self, geom, id_node, id_edge, att_node=None, adjust=False):
         """Cut an edge in two edges and insert a new node between each.

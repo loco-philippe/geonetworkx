@@ -33,6 +33,43 @@ class TestGeoGraph(unittest.TestCase):
         gr_simplemap2 = gnx.from_geopandas_edgelist(simple_edge, node_attr=True, node_gdf=simple_node, node_id='node_id')
         self.assertTrue(graphs_equal(gr_simplemap, gr_simplemap2))
 
+    def test_erase_linear_nodes(self):
+        """test erase_linear_nodes method"""
+        simplemap = gpd.GeoDataFrame({'geometry': [LineString([paris, lyon]), LineString([lyon, marseille]), 
+            LineString([paris, bordeaux]), LineString([lyon, bordeaux]), LineString([bordeaux, marseille])]}, crs=4326).to_crs(2154)
+        gr = gnx.from_geopandas_edgelist(simplemap)
+        len_gr = (len(gr.nodes), len(gr.edges))
+        res = gr.erase_linear_nodes(2)
+        self.assertEqual((len(gr.nodes), len(gr.edges)), len_gr)
+        self.assertFalse(res)
+        res = gr.erase_linear_nodes(3)
+        self.assertEqual((len(gr.nodes), len(gr.edges)), len_gr)
+        self.assertFalse(res)
+        gr.remove_edge(1,2)
+        gr.add_edges_from([(0,1,{'a':1, 'b':2}), (1,3,{'a':2, 'c':4})])
+        weight = gr.edges[0,1]['weight'] + gr.edges[1,3]['weight']
+        res = gr.erase_linear_nodes(1)
+        self.assertEqual(gr.edges[0,3]['a'], 2)
+        self.assertEqual(gr.edges[0,3]['b'], 2)
+        self.assertEqual(gr.edges[0,3]['c'], 4)
+        self.assertEqual(gr.edges[0,3]['weight'], weight)
+        self.assertEqual((len(gr.nodes), len(gr.edges)), (len_gr[0]-1, len_gr[1]-2))
+        self.assertTrue(res)
+
+    def test_erase_all_linear_nodes(self):
+        """test erase_linear_nodes method"""
+        simplemap = gpd.GeoDataFrame({'geometry': [LineString([paris, lyon]), LineString([lyon, marseille]), 
+            LineString([paris, bordeaux]), LineString([lyon, bordeaux]), LineString([bordeaux, marseille])]}, crs=4326).to_crs(2154)
+        gr = gnx.from_geopandas_edgelist(simplemap)
+        len_gr = (len(gr.nodes), len(gr.edges))
+        res = gr.erase_linear_nodes()
+        self.assertEqual((len(gr.nodes), len(gr.edges)), len_gr)
+        self.assertFalse(res)
+        gr.remove_edge(1,2)
+        res = gr.erase_linear_nodes()
+        self.assertEqual((len(gr.nodes), len(gr.edges)), (len_gr[0]-1, len_gr[1]-2))
+        self.assertTrue(res)
+        
 class Test_geopandas_nodelist(unittest.TestCase):
     """tests GeoPandas convertion"""
 
@@ -83,6 +120,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(utils.geo_merge(l1, pt1), l1)
         self.assertEqual(utils.geo_merge(pt1e, pt1), LineString([pt1, pt1e]))
         self.assertTrue(utils.geo_merge(pt1e, pt1, False) is None)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
