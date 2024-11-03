@@ -116,7 +116,7 @@ def geo_cut(line, geom, adjust=False):
     return None
 
 
-def nodes_gdf_from_edges_gdf(e_gdf, source=None, target=None):
+def nodes_gdf_from_edges_gdf(e_gdf, source=None, target=None, linestring=True):
     """create a nodes GeoDataFrame from an edges GeoDataFrame.
 
     A node geometry is one of the ends (Point) of the edge geometry (LineString).
@@ -130,7 +130,9 @@ def nodes_gdf_from_edges_gdf(e_gdf, source=None, target=None):
         A valid column name for the source nodes (for the directed case).
     target : str (default 'target')
         A valid column name for the target nodes (for the directed case).
-
+    linestring : boolean (default True)
+        If True, source and target are the ends of the linestring.
+        If False source and target are the ends of the boundary.
     Returns
     -------
     tuple of two GeoDataFrame
@@ -139,8 +141,12 @@ def nodes_gdf_from_edges_gdf(e_gdf, source=None, target=None):
     """
     crs = e_gdf.crs.to_epsg()
     node_id = 'node_id'
-    e_gdf["source_geo"] = e_gdf[GEOM].apply(lambda ls: ls.boundary.geoms[0])
-    e_gdf["target_geo"] = e_gdf[GEOM].apply(lambda ls: ls.boundary.geoms[1])
+    if linestring:
+        e_gdf["source_geo"] = e_gdf[GEOM].apply(lambda ls: Point(ls.coords[0]))
+        e_gdf["target_geo"] = e_gdf[GEOM].apply(lambda ls: Point(ls.coords[-1]))     
+    else:
+        e_gdf["source_geo"] = e_gdf[GEOM].apply(lambda ls: ls.boundary.geoms[0])
+        e_gdf["target_geo"] = e_gdf[GEOM].apply(lambda ls: ls.boundary.geoms[1])
 
     if source in e_gdf.columns:
         e_gdf_source = e_gdf.loc[:, [source, "source_geo"]].rename(

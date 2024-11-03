@@ -74,7 +74,8 @@ def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
 
 
 def from_geopandas_edgelist(edge_gdf, source='source', target='target',
-                            edge_attr=None, node_gdf=None, node_id=None, node_attr=None):
+                            edge_attr=None, node_gdf=None, node_id=None, 
+                            node_attr=None, linestring=True):
     '''Returns a GeoGraph from GeoDataFrame containing an edge list.
 
     The GeoDataFrame should contain at least three columns (node id source, node id target,
@@ -107,7 +108,10 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
         used to retrieve items and add them to the graph as node attributes.
         If True, all of the remaining columns will be added. If None (default), no node
         attributes are added to the graph.
-
+    linestring : boolean (default True)
+        If True, source and target are the ends of the linestring.
+        If False source and target are the ends of the boundary.
+        
     Returns
     -------
     GeoGraph
@@ -133,7 +137,7 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
             e_gdf, source, target, n_gdf, node_id)
     elif not n_gdf_ok:
         n_gdf, e_gdf = utils.nodes_gdf_from_edges_gdf(
-            e_gdf, source=source, target=target)
+            e_gdf, source=source, target=target, linestring=linestring)
 
     if WEIGHT not in e_gdf.columns:
         e_gdf[WEIGHT] = e_gdf[GEOM].length
