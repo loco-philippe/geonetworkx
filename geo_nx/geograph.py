@@ -458,6 +458,16 @@ class GeoGraph(nx.Graph):
             self.nodes[node][attribute] = dist
         return  dist
 
+    def weight_node_to_node(self, node1, node2):
+        '''Return the distance between two nodes without path.
+
+        Parameters
+        ----------
+        node1, node2 : int or str
+            Nodes used to distance measure.
+        '''
+        return self.nodes[node1][GEOM].centroid.distance(self.nodes[node2][GEOM].centroid)
+    
     def clean_attributes(self, nodes=True, edges=True):
         '''remove attributes with None value
 
