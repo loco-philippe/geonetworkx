@@ -6,52 +6,55 @@ from shapely import LineString, Point
 import pandas as pd
 import geopandas as gpd
 
-GEOM = 'geometry'
-WEIGHT = 'weight'
+GEOM = "geometry"
+WEIGHT = "weight"
+
 
 def geo_merge(geo1, geo2, adjust=True):
-    '''Merge two LineString or Point in a single LineString or Point
-    
+    """Merge two LineString or Point in a single LineString or Point
+
     Parameters
     ----------
-    
+
     - geo1: shapely LineString or Point
         Geometry to merge.
     - geo2: shapely LineString or Point
         Geometry to merge.
     - adjust: boolean (default True)
-        If False, the result is None if the boundaries are disjoint. 
-    
+        If False, the result is None if the boundaries are disjoint.
+
     Returns
     -------
     - LineString
-        
-    '''
-    if geo1.geom_type == 'Point':
+
+    """
+    if geo1.geom_type == "Point":
         geo1, geo2 = geo2, geo1
     coord1 = list(geo1.coords)
     coord2 = list(geo2.coords)
-    dis = [Point(coord2[-1]).distance(Point(coord1[0])),
-           Point(coord1[-1]).distance(Point(coord2[0])),
-           Point(coord1[0]).distance(Point(coord2[0])),
-           Point(coord1[-1]).distance(Point(coord2[-1]))]
+    dis = [
+        Point(coord2[-1]).distance(Point(coord1[0])),
+        Point(coord1[-1]).distance(Point(coord2[0])),
+        Point(coord1[0]).distance(Point(coord2[0])),
+        Point(coord1[-1]).distance(Point(coord2[-1])),
+    ]
     min_dis = min(dis)
     match (geo1.geom_type, geo2.geom_type, geo1.distance(geo2), adjust):
-        case ('Point', 'Point', 0.0, _):
+        case ("Point", "Point", 0.0, _):
             return geo1
-        case ('Point', 'Point', _, False):
+        case ("Point", "Point", _, False):
             return None
-        case ('Point', 'Point', _, _):
+        case ("Point", "Point", _, _):
             return LineString([geo1, geo2])
-        case ('LineString', 'Point', 0.0, _):
+        case ("LineString", "Point", 0.0, _):
             return geo1
-        case ('LineString', 'Point', _, False):
+        case ("LineString", "Point", _, False):
             return None
-        case ('LineString', 'Point', _, _):
+        case ("LineString", "Point", _, _):
             if geo2.distance(Point(coord1[0])) < geo2.distance(Point(coord1[-1])):
                 return LineString(coord2 + coord1)
             return LineString(coord1 + coord2)
-        case ('LineString', 'LineString', 0.0, _):
+        case ("LineString", "LineString", 0.0, _):
             if dis[0] == 0.0:
                 return LineString(coord2 + coord1[1:])
             if dis[1] == 0.0:
@@ -59,11 +62,11 @@ def geo_merge(geo1, geo2, adjust=True):
             if dis[2] == 0.0:
                 return LineString(coord1[-1::-1] + coord2[1:])
             if dis[3] == 0.0:
-                return LineString(coord1[:-1] + coord2[-1::-1])   
-            return None    
-        case ('LineString', 'LineString', _, False):
+                return LineString(coord1[:-1] + coord2[-1::-1])
             return None
-        case ('LineString', 'LineString', _, _):
+        case ("LineString", "LineString", _, False):
+            return None
+        case ("LineString", "LineString", _, _):
             if dis[0] == min_dis:
                 return LineString(coord2 + coord1)
             if dis[1] == min_dis:
@@ -71,12 +74,13 @@ def geo_merge(geo1, geo2, adjust=True):
             if dis[2] == min_dis:
                 return LineString(coord1[-1::-1] + coord2)
             if dis[3] == min_dis:
-                return LineString(coord1 + coord2[-1::-1])  
+                return LineString(coord1 + coord2[-1::-1])
         case _:
             return None
 
+
 def geo_cut(line, geom, adjust=False):
-    '''Cuts a line in two at the geometry nearest projection point
+    """Cuts a line in two at the geometry nearest projection point
 
     Parameters
     ----------
@@ -95,7 +99,7 @@ def geo_cut(line, geom, adjust=False):
         - second geometry (shapely LineString)
         - intersected point (shapely Point)
         - line coordinate for intersected point (float)
-    '''
+    """
     line = LineString(line)
     point = geom.centroid
     absc = line.project(point)
@@ -106,13 +110,22 @@ def geo_cut(line, geom, adjust=False):
         pt_absc = line.project(Point(coord))
         if pt_absc == absc:
             coords[ind] = point.coords[0] if adjust else coords[ind]
-            return [LineString(coords[:ind+1]), LineString(coords[ind:]), Point(coords[ind]), 0.0]
+            return [
+                LineString(coords[: ind + 1]),
+                LineString(coords[ind:]),
+                Point(coords[ind]),
+                0.0,
+            ]
         if pt_absc > absc:
             cp = line.interpolate(absc)
             new_c = point.coords[0] if adjust else (cp.x, cp.y)
             dist = 0.0 if adjust else point.distance(Point(new_c))
-            return [LineString(coords[:ind] + [new_c]),
-                    LineString([new_c] + coords[ind:]), Point(new_c), dist]
+            return [
+                LineString(coords[:ind] + [new_c]),
+                LineString([new_c] + coords[ind:]),
+                Point(new_c),
+                dist,
+            ]
     return None
 
 
@@ -140,26 +153,31 @@ def nodes_gdf_from_edges_gdf(e_gdf, source=None, target=None, linestring=True):
        e_gdf: Tabular representation of nodes (addition of source and target columns),
     """
     crs = e_gdf.crs.to_epsg()
-    node_id = 'node_id'
+    node_id = "node_id"
     if linestring:
         e_gdf["source_geo"] = e_gdf[GEOM].apply(lambda ls: Point(ls.coords[0]))
-        e_gdf["target_geo"] = e_gdf[GEOM].apply(lambda ls: Point(ls.coords[-1]))     
+        e_gdf["target_geo"] = e_gdf[GEOM].apply(lambda ls: Point(ls.coords[-1]))
     else:
         e_gdf["source_geo"] = e_gdf[GEOM].apply(lambda ls: ls.boundary.geoms[0])
         e_gdf["target_geo"] = e_gdf[GEOM].apply(lambda ls: ls.boundary.geoms[1])
 
     if source in e_gdf.columns:
         e_gdf_source = e_gdf.loc[:, [source, "source_geo"]].rename(
-            columns={source: node_id, "source_geo": GEOM})
+            columns={source: node_id, "source_geo": GEOM}
+        )
         e_gdf_target = e_gdf.loc[:, [target, "target_geo"]].rename(
-            columns={target: node_id, "target_geo": GEOM})
+            columns={target: node_id, "target_geo": GEOM}
+        )
         n_gdf = pd.concat([e_gdf_source, e_gdf_target]).drop_duplicates()
     else:
-        n_gdf = pd.concat([e_gdf["source_geo"], e_gdf["target_geo"]]
-                          ).drop_duplicates().reset_index(drop=True)
+        n_gdf = (
+            pd.concat([e_gdf["source_geo"], e_gdf["target_geo"]])
+            .drop_duplicates()
+            .reset_index(drop=True)
+        )
         nodidx = pd.Series(n_gdf.index, index=n_gdf)
-        e_gdf = e_gdf.join(nodidx.rename(source), on="source_geo", how='left')
-        e_gdf = e_gdf.join(nodidx.rename(target), on="target_geo", how='left')
+        e_gdf = e_gdf.join(nodidx.rename(source), on="source_geo", how="left")
+        e_gdf = e_gdf.join(nodidx.rename(target), on="target_geo", how="left")
         n_gdf = gpd.GeoDataFrame({GEOM: n_gdf, node_id: n_gdf.index}, crs=crs)
     del e_gdf["source_geo"], e_gdf["target_geo"]
     return (n_gdf, e_gdf)
@@ -186,22 +204,31 @@ def add_geometry_edges_from_nodes(e_gdf, source, target, n_gdf, node_id):
        Graph edge with additional 'geometry' column.
     """
     crs = n_gdf.crs.to_epsg()
-    e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, GEOM)], how='left', left_on=source,
-                     right_on=node_id).rename(columns={GEOM: 'geom_source'})
+    e_gdf = pd.merge(
+        e_gdf,
+        n_gdf.loc[:, (node_id, GEOM)],
+        how="left",
+        left_on=source,
+        right_on=node_id,
+    ).rename(columns={GEOM: "geom_source"})
     e_gdf.pop(node_id)
-    e_gdf = pd.merge(e_gdf, n_gdf.loc[:, (node_id, GEOM)], how='left', left_on=target,
-                     right_on=node_id).rename(columns={GEOM: 'geom_target'})
+    e_gdf = pd.merge(
+        e_gdf,
+        n_gdf.loc[:, (node_id, GEOM)],
+        how="left",
+        left_on=target,
+        right_on=node_id,
+    ).rename(columns={GEOM: "geom_target"})
     e_gdf.pop(node_id)
-    gs_src = gpd.GeoSeries(e_gdf['geom_source'])
-    gs_tgt = gpd.GeoSeries(e_gdf['geom_target'])
-    e_gdf = gpd.GeoDataFrame(
-        e_gdf, geometry=gs_src.shortest_line(gs_tgt), crs=crs)
+    gs_src = gpd.GeoSeries(e_gdf["geom_source"])
+    gs_tgt = gpd.GeoSeries(e_gdf["geom_target"])
+    e_gdf = gpd.GeoDataFrame(e_gdf, geometry=gs_src.shortest_line(gs_tgt), crs=crs)
     del e_gdf["geom_source"], e_gdf["geom_target"]
     return e_gdf
 
 
 def geom_to_crs(geom, crs, new_crs):
-    '''convert geometry coordinates from a CRS to another CRS
+    """convert geometry coordinates from a CRS to another CRS
 
     Parameters
     ----------
@@ -216,12 +243,12 @@ def geom_to_crs(geom, crs, new_crs):
     -------
     Shapely geometry
        Geometry with coordinates defined in the new CRS.
-    '''
+    """
     return gpd.GeoSeries([geom], crs=crs).to_crs(new_crs)[0]
 
 
 def cast_id(node_id, only_int=False):
-    '''replace number string as integer in a single or an iterable.
+    """replace number string as integer in a single or an iterable.
 
     If option is activate, return only integer.
 
@@ -236,8 +263,8 @@ def cast_id(node_id, only_int=False):
     -------
     List
        list of int (if only_int) or list of int/string.
-    '''
-    if hasattr(node_id, '__iter__') and not isinstance(node_id, str):
+    """
+    if hasattr(node_id, "__iter__") and not isinstance(node_id, str):
         cast_list = list(cast_id(n_id, only_int=only_int) for n_id in node_id)
         return [val for val in cast_list if val is not None]
     try:

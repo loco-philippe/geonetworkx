@@ -20,13 +20,13 @@ import geo_nx as gnx
 from geo_nx import utils
 from geo_nx.utils import GeonxError
 
-GEOM = 'geometry'
-WEIGHT = 'weight'
-NODE_ID = 'node_id'
+GEOM = "geometry"
+WEIGHT = "weight"
+NODE_ID = "node_id"
 
 
 def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
-    '''Convert a GeoDataFrame in an empty GeoGraph (without edges).
+    """Convert a GeoDataFrame in an empty GeoGraph (without edges).
 
     The GeoDataFrame should contain at least one column ('geometry') filled with Shapely geometries.
     Columns of the GeoDataFrame are converted in node attributes.
@@ -50,7 +50,7 @@ def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
     -------
     GeoGraph
         Empty GeoGraph with nodes of the GeoDataFrame.
-    '''
+    """
     match node_attr:
         case True:
             new_node_attr = list(node_gdf.columns)
@@ -62,21 +62,39 @@ def from_geopandas_nodelist(node_gdf, node_id=None, node_attr=None):
             new_node_attr = [GEOM]
     if node_id:
         new_node_attr = list(set(new_node_attr + [node_id]))
-    dic = node_gdf.loc[:, new_node_attr].to_dict(orient='records')
+    dic = node_gdf.loc[:, new_node_attr].to_dict(orient="records")
     if not node_id or node_id not in node_gdf.columns:
-        nx_lis = [(idx, dict(item for item in row.items()))
-                  for idx, row in enumerate(dic)]
+        nx_lis = [
+            (idx, dict(item for item in row.items())) for idx, row in enumerate(dic)
+        ]
     else:
-        nx_lis = [(row[node_id], dict(item for item in row.items() if item[0] != node_id and not (isinstance(item[1], float) and math.isnan(item[1]))))
-                  for row in dic]
+        nx_lis = [
+            (
+                row[node_id],
+                dict(
+                    item
+                    for item in row.items()
+                    if item[0] != node_id
+                    and not (isinstance(item[1], float) and math.isnan(item[1]))
+                ),
+            )
+            for row in dic
+        ]
     geo_gr = nx.empty_graph(nx_lis)
     return gnx.GeoGraph(geo_gr, crs=node_gdf.crs)
 
 
-def from_geopandas_edgelist(edge_gdf, source='source', target='target',
-                            edge_attr=None, node_gdf=None, node_id=None, 
-                            node_attr=None, linestring=True):
-    '''Returns a GeoGraph from GeoDataFrame containing an edge list.
+def from_geopandas_edgelist(
+    edge_gdf,
+    source="source",
+    target="target",
+    edge_attr=None,
+    node_gdf=None,
+    node_id=None,
+    node_attr=None,
+    linestring=True,
+):
+    """Returns a GeoGraph from GeoDataFrame containing an edge list.
 
     The GeoDataFrame should contain at least three columns (node id source, node id target,
     geometry).
@@ -111,11 +129,11 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
     linestring : boolean (default True)
         If True, source and target are the ends of the linestring.
         If False source and target are the ends of the boundary.
-        
+
     Returns
     -------
     GeoGraph
-        GeoGraph with edges of the GeoDataFrame.'''
+        GeoGraph with edges of the GeoDataFrame."""
 
     n_gdf_ok = node_gdf is not None
     e_gdf = edge_gdf.copy()
@@ -134,22 +152,23 @@ def from_geopandas_edgelist(edge_gdf, source='source', target='target',
 
     if n_gdf_ok and GEOM in n_gdf and not GEOM in e_gdf:
         e_gdf = utils.add_geometry_edges_from_nodes(
-            e_gdf, source, target, n_gdf, node_id)
+            e_gdf, source, target, n_gdf, node_id
+        )
     elif not n_gdf_ok:
         n_gdf, e_gdf = utils.nodes_gdf_from_edges_gdf(
-            e_gdf, source=source, target=target, linestring=linestring)
+            e_gdf, source=source, target=target, linestring=linestring
+        )
 
     if WEIGHT not in e_gdf.columns:
         e_gdf[WEIGHT] = e_gdf[GEOM].length
     geo_gr = nx.from_pandas_edgelist(e_gdf, edge_attr=new_edge_attr)
     crs = e_gdf.crs if e_gdf.crs else (n_gdf.crs if n_gdf_ok else None)
-    geo_gr.graph['crs'] = crs.to_epsg()
-    node_gr = gnx.from_geopandas_nodelist(
-        n_gdf, node_id=node_id, node_attr=node_attr)
+    geo_gr.graph["crs"] = crs.to_epsg()
+    node_gr = gnx.from_geopandas_nodelist(n_gdf, node_id=node_id, node_attr=node_attr)
     return gnx.compose(gnx.GeoGraph(geo_gr), node_gr)
 
 
-def to_geopandas_edgelist(graph, source='source', target='target', nodelist=None):
+def to_geopandas_edgelist(graph, source="source", target="target", nodelist=None):
     """Returns the graph edge list as a GeoDataFrame.
 
     Parameters
@@ -174,11 +193,12 @@ def to_geopandas_edgelist(graph, source='source', target='target', nodelist=None
         Graph edge list.
     """
     pd_edgelist = nx.to_pandas_edgelist(
-        graph, source=source, target=target, nodelist=nodelist)
-    return gpd.GeoDataFrame(pd_edgelist, crs=graph.graph['crs'])
+        graph, source=source, target=target, nodelist=nodelist
+    )
+    return gpd.GeoDataFrame(pd_edgelist, crs=graph.graph["crs"])
 
 
-def to_geopandas_nodelist(graph, node_id='node_id', nodelist=None):
+def to_geopandas_nodelist(graph, node_id="node_id", nodelist=None):
     """Returns the graph node list as a GeoDataFrame.
 
     Parameters
@@ -204,13 +224,13 @@ def to_geopandas_nodelist(graph, node_id='node_id', nodelist=None):
     nodes[node_id] = pd.Series(list(graph.nodes))
     if nodelist:
         nodes = nodes.set_index(node_id).loc[nodelist].reset_index()
-    return gpd.GeoDataFrame(nodes, crs=graph.graph['crs'])
+    return gpd.GeoDataFrame(nodes, crs=graph.graph["crs"])
 
 
 def project_graph(nodes_src, target, radius, node_attr, edge_attr):
-    '''Projection of a list of nodes into a graph.
+    """Projection of a list of nodes into a graph.
 
-    The projection create a new graph where nodes are the nodes to project and 
+    The projection create a new graph where nodes are the nodes to project and
     edges are LineString between nodes to project and the nearest node in the graph.
 
     Parameters
@@ -235,26 +255,39 @@ def project_graph(nodes_src, target, radius, node_attr, edge_attr):
     tuple (GeoGraph, GeoDataFrame)
        The GeoGraph is the graph created.
        The GeoDataFrame is the nodes_src with non projected nodes.
-    '''
+    """
     if not set(target[NODE_ID]).isdisjoint(set(nodes_src[NODE_ID])):
-        raise GeonxError('node_id of nodes_src and target have to be disjoint')
+        raise GeonxError("node_id of nodes_src and target have to be disjoint")
 
     target = target[[GEOM, NODE_ID]].copy()
-    target['geom_right'] = target[GEOM]
+    target["geom_right"] = target[GEOM]
     joined = gpd.sjoin_nearest(
-        nodes_src, target, how='left', max_distance=radius, distance_col=WEIGHT)
+        nodes_src, target, how="left", max_distance=radius, distance_col=WEIGHT
+    )
     joined = joined[pd.notna(joined[WEIGHT])]
     nodes_src_other = nodes_src[~nodes_src.index.isin(joined.index)]
 
-    gs_nodes = joined[node_attr + [GEOM, 'node_id_left', ]
-                      ].rename(columns={"node_id_left": NODE_ID})
-    gs_edges = joined[['node_id_left', 'node_id_right', WEIGHT, GEOM]]
+    gs_nodes = joined[
+        node_attr
+        + [
+            GEOM,
+            "node_id_left",
+        ]
+    ].rename(columns={"node_id_left": NODE_ID})
+    gs_edges = joined[["node_id_left", "node_id_right", WEIGHT, GEOM]]
     gs_edges = gs_edges.rename(
-        columns={"node_id_left": "source", "node_id_right": "target"})
+        columns={"node_id_left": "source", "node_id_right": "target"}
+    )
     gs_edges[GEOM] = gpd.GeoSeries(gs_edges[GEOM]).shortest_line(
-        gpd.GeoSeries(joined['geom_right']))
+        gpd.GeoSeries(joined["geom_right"])
+    )
     for key, value in edge_attr.items():
         gs_edges[key] = value
     gs = gnx.from_geopandas_edgelist(
-        gs_edges, edge_attr=True, node_gdf=gs_nodes, node_id=NODE_ID, node_attr=node_attr)
+        gs_edges,
+        edge_attr=True,
+        node_gdf=gs_nodes,
+        node_id=NODE_ID,
+        node_attr=node_attr,
+    )
     return (gs, nodes_src_other)
