@@ -2,7 +2,7 @@
 """
 This module contains the `GeoGraph` class.
 """
-
+import geo_nx as gnx
 import geopandas as gpd
 import folium
 import networkx as nx
@@ -248,6 +248,10 @@ class GeoGraph(nx.Graph):
 
         return dist
 
+    def to_directed(self):
+        """Returns an undirected copy of the graph."""
+        return gnx.GeoDiGraph(super().to_directed(self), crs=self.graph["crs"])
+    
     def to_geopandas_edgelist(self, source="source", target="target", nodelist=None):
         """see `convert.to_geopandas_edgelist`"""
         return to_geopandas_edgelist(
@@ -255,7 +259,7 @@ class GeoGraph(nx.Graph):
         )
 
     def to_geopandas_nodelist(self, node_id="node_id", nodelist=None):
-        """see `convert.to_geopandas_nodelist`"""
+        """see `convert.to_geopandas_nodelist`."""
         return to_geopandas_nodelist(self, node_id=node_id, nodelist=nodelist)
 
     def plot(self, edges=True, nodes=True, **param):
@@ -301,13 +305,13 @@ class GeoGraph(nx.Graph):
 
     def explore(
         self,
-        refmap=None,
+        refmap: dict|folium.Map =None,
         edges=True,
         nodes=True,
-        nodelist=None,
+        nodelist: list|None =None,
         layercontrol=False,
         **param,
-    ):
+    ) -> folium.Map:
         """Interactive map based on GeoPandas and folium/leaflet.js
 
         Generate an interactive leaflet map based on the edges GeoDataFrame and nodes GeoDataFrame.

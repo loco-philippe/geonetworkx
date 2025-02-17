@@ -9,6 +9,7 @@ For more information, see the
 """
 
 from geo_nx.geograph import GeoGraph
+from geo_nx.geodigraph import GeoDiGraph
 from geo_nx.convert import from_geopandas_edgelist, from_geopandas_nodelist
 from geo_nx.convert import to_geopandas_edgelist, to_geopandas_nodelist
 from geo_nx.convert import project_graph

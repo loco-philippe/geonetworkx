@@ -17,9 +17,39 @@ lyon = Point(4.8357, 45.7640)
 marseille = Point(5.3691, 43.3026)
 bordeaux = Point(-0.56667, 44.833328)
 
+class TestGeoDiGraph(unittest.TestCase):
+    """tests GeoDiGraph class"""
+
+    def test_empty_geodigraph(self):
+        """tests empty GeoDiGraph"""
+        dgr = gnx.GeoDiGraph(crs=2154)
+        self.assertEqual(len(dgr), 0)
+
+    def test_geodigraph(self):
+        """tests GeoDiGraph"""
+        simplemap = gpd.GeoDataFrame({'geometry': [LineString([paris, lyon]), LineString([lyon, marseille]), 
+            LineString([paris, bordeaux]), LineString([bordeaux, marseille])]}, crs=4326).to_crs(2154)
+        gr_simple = gnx.from_geopandas_edgelist(simplemap)
+        gr_simple.nodes[0]['city'] = 'paris'
+        gr_simple.nodes[1]['ville'] = 'lyon'
+        dgr_simple = gr_simple.to_directed()
+        self.assertTrue(len(dgr_simple.nodes) == len(dgr_simple.nodes) == len(simplemap))
+        dgr_simple_edges = dgr_simple.to_geopandas_edgelist()
+        gr_edges = gr_simple.to_geopandas_edgelist()
+        dgr_edges = dgr_simple_edges.iloc[[0,1,3,5]].reset_index(drop=True)
+        self.assertTrue(gr_edges.equals(dgr_edges))
+        dgr_simple_nodes = dgr_simple.to_geopandas_nodelist()
+        gr_nodes = gr_simple.to_geopandas_nodelist()
+        self.assertTrue(gr_nodes.equals(dgr_simple_nodes))
+        
 class TestGeoGraph(unittest.TestCase):
     """tests GeoGraph class"""
 
+    def test_empty_geograph(self):
+        """tests empty GeoGraph"""
+        gr = gnx.GeoGraph(crs=2154)
+        self.assertEqual(len(gr), 0)
+        
     def test_geograph(self):
         """tests GeoGraph"""
         simplemap = gpd.GeoDataFrame({'geometry': [LineString([paris, lyon]), LineString([lyon, marseille]), 
