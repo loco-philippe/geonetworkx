@@ -16,6 +16,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 import folium
+import matplotlib.pyplot as plt
 import networkx as nx
 import geo_nx as gnx
 from geo_nx import utils
@@ -297,3 +298,46 @@ def explore(
     if layercontrol:
         folium.LayerControl().add_to(refmap)
     return refmap
+
+def plot(graph, edges=True, nodes=True, **param):
+    """Plot a GeoGraph.
+
+    Generate a plot of the edges GeoDataFrame and nodes GeoDataFrame with matplotlib.
+
+    Parameters
+    ----------
+
+    graph : GeoGraph or GeoDiGraph
+        The graph to explore.
+    edges: boolean - default True
+        If True, edges are included in the plot.
+    nodes: boolean - default True
+        If True, nodes are included in the plot.
+    param: dict
+        `GeoDataFrame.plot` parameters. Parameters are common to edges and nodes.
+        Specific parameters to nodes or edges are preceded by *n_* or *e_* (eg 'e_color').
+        Default is {'e_edgecolor': 'black', 'n_marker': 'o', 'n_color': 'red',
+        'n_markersize': 5}
+    """
+    param = {
+        "e_edgecolor": "black",
+        "n_marker": "o",
+        "n_color": "red",
+        "n_markersize": 5,
+    } | param
+    common_param = dict(
+        (k, v) for k, v in param.items() if k[:2] not in ["e_", "n_"] and v
+    )
+    edge_param = common_param | dict(
+        (k[2:], v) for k, v in param.items() if k[:2] == "e_" and v
+    )
+    node_param = common_param | dict(
+        (k[2:], v) for k, v in param.items() if k[:2] == "n_" and v
+    )
+
+    fig, ax = plt.subplots()
+    if edges:
+        graph.to_geopandas_edgelist().plot(ax=ax, **edge_param)
+    if nodes:
+        graph.to_geopandas_nodelist().plot(ax=ax, **node_param)
+    plt.show()
