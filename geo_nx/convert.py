@@ -15,6 +15,7 @@ import math
 import pandas as pd
 import numpy as np
 import geopandas as gpd
+import folium
 import networkx as nx
 import geo_nx as gnx
 from geo_nx import utils
@@ -226,68 +227,73 @@ def to_geopandas_nodelist(graph, node_id="node_id", nodelist=None):
         nodes = nodes.set_index(node_id).loc[nodelist].reset_index()
     return gpd.GeoDataFrame(nodes, crs=graph.graph["crs"])
 
+def explore(
+    graph,
+    refmap: dict|folium.Map =None,
+    edges=True,
+    nodes=True,
+    nodelist: list|None =None,
+    layercontrol=False,
+    **param,
+    ) -> folium.Map:
+    """Interactive map based on GeoPandas and folium/leaflet.js
 
-def project_graph(nodes_src, target, radius, node_attr, edge_attr):
-    """Projection of a list of nodes into a graph.
-
-    The projection create a new graph where nodes are the nodes to project and
-    edges are LineString between nodes to project and the nearest node in the graph.
+    Generate an interactive leaflet map based on the edges GeoDataFrame and nodes GeoDataFrame.
 
     Parameters
     ----------
-    nodes_src : GeoDataFrame
-        The GeoDataFrame contains geometry and node_id columns.
 
-    target : GeoDataFrame
-        Target is the nodes GeoDataFrame of the graph. It contains geometry and node_id columns.
-
-    radius : float
-        Maximal distance of the nearest nodes.
-
-    node_attr : list of string
-        Nodes attributes to add in the new graph.
-
-    edge_attr : dict
-        The dict is added as an edge attribute to each edge created
-
-    Returns
-    -------
-    tuple (GeoGraph, GeoDataFrame)
-       The GeoGraph is the graph created.
-       The GeoDataFrame is the nodes_src with non projected nodes.
+    graph : GeoGraph or GeoDiGraph
+        The graph to explore.
+    refmap: dict or folium map - default None
+        Existing map instance or map defined by a dict (see folium Map keywords)
+        on which to draw the GeoGraph.
+    edges: boolean
+        If True, edges are includes in the plot.
+    nodes: boolean
+        If True, nodes defined by nodelist are included in the plot.
+    nodelist: list - default None
+        Use only nodes specified in nodelist (all if None).
+    layercontrol: boolean - default False
+        Add folium.LayerControl to the map if True.
+    param: dict
+        `GeoDataFrame.explore` parameters. Parameters are common to edges and nodes.
+        Specific parameters to nodes or edges are preceded by *n_* or *e_* (eg 'e_color')
     """
-    if not set(target[NODE_ID]).isdisjoint(set(nodes_src[NODE_ID])):
-        raise GeonxError("node_id of nodes_src and target have to be disjoint")
+    param = {
+        "e_name": "edges",
+        "n_name": "nodes",
+        "e_popup": ["weight"],
+        "n_popup": None,
+        "e_tooltip": None,
+        "n_tooltip": None,
+        "e_color": "blue",
+        "n_color": "black",
+        "n_marker_kwds": {"radius": 2, "fill": True},
+    } | param
+    common_param = dict(
+        (k, v) for k, v in param.items() if k[:2] not in ["e_", "n_"] and v
+    )
+    edge_param = common_param | dict(
+        (k[2:], v) for k, v in param.items() if k[:2] == "e_" and v
+    )
+    node_param = common_param | dict(
+        (k[2:], v) for k, v in param.items() if k[:2] == "n_" and v
+    )
 
-    target = target[[GEOM, NODE_ID]].copy()
-    target["geom_right"] = target[GEOM]
-    joined = gpd.sjoin_nearest(
-        nodes_src, target, how="left", max_distance=radius, distance_col=WEIGHT
-    )
-    joined = joined[pd.notna(joined[WEIGHT])]
-    nodes_src_other = nodes_src[~nodes_src.index.isin(joined.index)]
+    if isinstance(refmap, dict):
+        refmap = folium.Map(**refmap)
+    elif refmap is None:
+        refmap = folium.Map()
 
-    gs_nodes = joined[
-        node_attr
-        + [
-            GEOM,
-            "node_id_left",
-        ]
-    ].rename(columns={"node_id_left": NODE_ID})
-    gs_edges = joined[["node_id_left", "node_id_right", WEIGHT, GEOM]]
-    gs_edges = gs_edges.rename(
-        columns={"node_id_left": "source", "node_id_right": "target"}
-    )
-    gs_edges[GEOM] = gpd.GeoSeries(gs_edges[GEOM]).shortest_line(
-        gpd.GeoSeries(joined["geom_right"])
-    )
-    for key, value in edge_attr.items():
-        gs_edges[key] = value
-    gs = gnx.from_geopandas_edgelist(
-        gs_edges,
-        edge_attr=True,
-        node_gdf=gs_nodes,
-        node_id=NODE_ID,
-        node_attr=node_attr,
-    )
-    return (gs, nodes_src_other)
+    if edges and graph.edges:
+        graph.to_geopandas_edgelist(nodelist=nodelist).explore(
+            m=refmap, **edge_param
+        )
+    if nodes and graph.nodes:
+        graph.to_geopandas_nodelist(nodelist=nodelist).explore(
+            m=refmap, **node_param
+        )
+    if layercontrol:
+        folium.LayerControl().add_to(refmap)
+    return refmap

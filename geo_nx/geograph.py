@@ -9,7 +9,9 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from shapely import LineString
 from geo_nx.convert import to_geopandas_edgelist, to_geopandas_nodelist
+from geo_nx.convert import explore
 from geo_nx.utils import geo_cut, cast_id, geo_merge
+from geo_nx.algorithms import weight_extend, weight_node_to_graph
 
 GEOM = "geometry"
 WEIGHT = "weight"
@@ -312,65 +314,9 @@ class GeoGraph(nx.Graph):
         layercontrol=False,
         **param,
     ) -> folium.Map:
-        """Interactive map based on GeoPandas and folium/leaflet.js
-
-        Generate an interactive leaflet map based on the edges GeoDataFrame and nodes GeoDataFrame.
-
-        Parameters
-        ----------
-
-        refmap: dict or folium map - default None
-            Existing map instance or map defined by a dict (see folium Map keywords)
-            on which to draw the GeoGraph.
-        edges: boolean
-            If True, edges are includes in the plot.
-        nodes: boolean
-            If True, nodes defined by nodelist are included in the plot.
-        nodelist: list - default None
-            Use only nodes specified in nodelist (all if None).
-        layercontrol: boolean - default False
-            Add folium.LayerControl to the map if True.
-        param: dict
-            `GeoDataFrame.explore` parameters. Parameters are common to edges and nodes.
-            Specific parameters to nodes or edges are preceded by *n_* or *e_* (eg 'e_color')
-        """
-        param = {
-            "e_name": "edges",
-            "n_name": "nodes",
-            "e_popup": ["weight"],
-            "n_popup": None,
-            "e_tooltip": None,
-            "n_tooltip": None,
-            "e_color": "blue",
-            "n_color": "black",
-            "n_marker_kwds": {"radius": 2, "fill": True},
-        } | param
-        common_param = dict(
-            (k, v) for k, v in param.items() if k[:2] not in ["e_", "n_"] and v
-        )
-        edge_param = common_param | dict(
-            (k[2:], v) for k, v in param.items() if k[:2] == "e_" and v
-        )
-        node_param = common_param | dict(
-            (k[2:], v) for k, v in param.items() if k[:2] == "n_" and v
-        )
-
-        if isinstance(refmap, dict):
-            refmap = folium.Map(**refmap)
-        elif refmap is None:
-            refmap = folium.Map()
-
-        if edges and self.edges:
-            self.to_geopandas_edgelist(nodelist=nodelist).explore(
-                m=refmap, **edge_param
-            )
-        if nodes and self.nodes:
-            self.to_geopandas_nodelist(nodelist=nodelist).explore(
-                m=refmap, **node_param
-            )
-        if layercontrol:
-            folium.LayerControl().add_to(refmap)
-        return refmap
+        """see `convert.explore`"""
+        return explore(self, refmap=refmap, edges=edges, nodes=nodes, 
+                       nodelist=nodelist, layercontrol=layercontrol, **param) 
 
     def find_nearest_edge(self, geom, max_distance):
         """Find the closest edge to a geometry
@@ -433,98 +379,15 @@ class GeoGraph(nx.Graph):
         return None
 
     def weight_extend(self, edge, ext_gr, radius=None, n_attribute=None, n_active=None):
-        """Find the weight of the the path (witch contains edge) between nodes
-        included in a projected graph and with minimal weight.
-
-        Parameters
-        ----------
-        edge : tuple
-            Edge to extend in the projected graph.
-        ext_gr : Graph
-            Projected Graph.
-        radius : float (default None)
-            radius used to find the nearest external node for each node of the edge.
-            If None, the radius used is the weight of the edge.
-        n_attribute : str (default None)
-            Node attribute to store node projected distance.
-        n_active : str (default None)
-            Node attribute that indicates the validity (boolean) of the node.
-
-        Returns
-        -------
-        float
-            extended weight
-        """
-        dist_ext = self.edges[edge][WEIGHT]
-        # radius = max(dist_ext, radius) if radius else dist_ext
-        radius = radius if radius else dist_ext
-        for node in edge:
-            if n_attribute in self.nodes[node] and self.nodes[node][n_attribute]:
-                dist_st = self.nodes[node][n_attribute]
-            else:
-                dist_st = self.weight_node_to_graph(
-                    node, ext_gr, radius=radius, attribute=n_attribute, active=n_active
-                )
-            if not dist_st:
-                return None
-            dist_ext += dist_st
-        return dist_ext
+        """see `algorithms.weight_extend`"""
+        return weight_extend(self, edge, ext_gr, radius=radius, 
+                             n_attribute=n_attribute, n_active=n_active)
 
     def weight_node_to_graph(
-        self, node, ext_gr, radius=None, attribute=None, active=None
-    ):
-        """Return the distance between a node and a projected graph.
-
-        Parameters
-        ----------
-        node : int or str
-            Origin of the distance measure.
-        ext_gr : Graph
-            Projected Graph
-        radius : float (default None)
-            value used to filter projected nodes before analyse.
-            If None, all the projected graph is used.
-        attribute : int or str (default None)
-            Node attribute to store resulted distance
-        active : str (default None)
-            ext_gr node attribute that indicates the validity (boolean) of the node.
-
-        Returns
-        -------
-        float
-            distance between the node and the projected graph
-        """
-        if radius:
-            ego_gr = nx.ego_graph(self, node, radius=radius, distance=WEIGHT).nodes
-            near_gr = [
-                nd
-                for nd in ego_gr
-                if nd in ext_gr
-                and nd != node
-                and (active not in self.nodes[nd] or self.nodes[nd][active])
-            ]
-        else:
-            near_gr = ext_gr
-        dist_st = [
-            nx.shortest_path_length(self, source=node, target=nd, weight=WEIGHT)
-            for nd in near_gr
-        ]
-        dist = None if not dist_st else min(dist_st)
-        if dist and attribute:
-            self.nodes[node][attribute] = dist
-        return dist
-
-    def weight_node_to_node(self, node1, node2):
-        """Return the distance between two nodes without path.
-
-        Parameters
-        ----------
-        node1, node2 : int or str
-            Nodes used to distance measure.
-        """
-        return self.nodes[node1][GEOM].centroid.distance(
-            self.nodes[node2][GEOM].centroid
-        )
+        graph, node, ext_gr, radius=None, attribute=None, active=None):
+        """see `algorithms.weight_node_to_graph`"""
+        return weight_node_to_graph(graph, node, ext_gr, radius=radius, 
+                                    attribute=attribute, active=active)
 
     def clean_attributes(self, nodes=True, edges=True):
         """remove attributes with None value
