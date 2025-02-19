@@ -5,7 +5,7 @@
 This package contains classes and functions for geospatial networks.
 
 For more information, see the
-[github repository](https://github.com/loco-labs/geonetworks).
+[github repository](https://github.com/loco-labs/geo_nx).
 """
 
 from geo_nx.geograph import GeoGraph
