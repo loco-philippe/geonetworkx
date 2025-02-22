@@ -136,7 +136,7 @@ def project_graph(nodes_src, target, radius, node_attr, edge_attr):
     )
     return (gs, nodes_src_other)
 
-def weight_extend(graph, edge, ext_gr, radius=None, n_attribute=None, n_active=None):
+def weight_extend(graph, edge, ext_gr, radius=None, n_attribute=None, n_active=None, gr_rev=None):
     """Find the weight of the the path (witch contains edge) between nodes
     included in a projected graph and with minimal weight.
 
@@ -169,8 +169,9 @@ def weight_extend(graph, edge, ext_gr, radius=None, n_attribute=None, n_active=N
         if attribute in graph.nodes[node] and graph.nodes[node][attribute]:
             dist_st = graph.nodes[node][attribute]
         else:
-            dist_st = graph.weight_node_to_graph(
-                node, ext_gr, is_source, radius=radius, attribute=attribute, active=n_active
+            dist_st = weight_node_to_graph(
+                graph, node, ext_gr, is_source, radius=radius,  
+                attribute=attribute, active=n_active, gr_rev=gr_rev
             )
         if not dist_st:
             return None
@@ -178,7 +179,7 @@ def weight_extend(graph, edge, ext_gr, radius=None, n_attribute=None, n_active=N
     return dist_ext
 
 def weight_node_to_graph(
-    graph, node, ext_gr, is_source, radius=None, attribute=None, active=None
+    graph, node, ext_gr, is_source, radius=None, attribute=None, active=None, gr_rev=None
 ):
     """Return the distance between a node and a projected graph.
 
@@ -205,12 +206,13 @@ def weight_node_to_graph(
         distance between the node and the projected graph
     """
     #undirected = isinstance(graph, gnx.geodigraph.GeoDiGraph)
-    undirected = graph.to_undirected()
+    #undirected = graph.to_undirected()
     if radius:
         #ego_gr = nx.ego_graph(graph, node, radius=radius, distance=WEIGHT, center=False).nodes
-        #ego_gr = nx.ego_graph(graph, node, radius=radius, distance=WEIGHT).nodes
-        ego_gr = nx.ego_graph(undirected, node, radius=radius, distance=WEIGHT).nodes
+        ego_gr = nx.ego_graph(graph, node, radius=radius, distance=WEIGHT).nodes
+        #ego_gr = nx.ego_graph(undirected, node, radius=radius, distance=WEIGHT).nodes
         #ego_gr = nx.ego_graph(graph, node, radius=radius, distance=WEIGHT, 
+        #                      undirected=True).nodes
         #                      undirected=undirected).nodes
         near_gr = [
             nd
@@ -219,6 +221,15 @@ def weight_node_to_graph(
             and nd != node
             and (active not in graph.nodes[nd] or graph.nodes[nd][active])
         ]
+        if gr_rev:
+            ego_gr = nx.ego_graph(gr_rev, node, radius=radius, distance=WEIGHT).nodes 
+            near_gr += [
+                nd
+                for nd in ego_gr
+                if nd in ext_gr
+                and nd != node
+                and (active not in graph.nodes[nd] or graph.nodes[nd][active])
+            ]
     else:
         near_gr = ext_gr
     if is_source:

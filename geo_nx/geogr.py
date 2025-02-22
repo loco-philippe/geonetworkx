@@ -68,16 +68,16 @@ class GeoGr(ABC):
         """see `convert.to_geopandas_nodelist`"""
         return to_geopandas_nodelist(self, node_id=node_id, nodelist=nodelist)
     
-    def weight_extend(self, edge, ext_gr, radius=None, n_attribute=None, n_active=None):
+    def weight_extend(self, edge, ext_gr, radius=None, n_attribute=None, n_active=None, gr_rev=None):
         """see `algorithms.weight_extend`"""
         return weight_extend(self, edge, ext_gr, radius=radius, 
-                             n_attribute=n_attribute, n_active=n_active)    
+                             n_attribute=n_attribute, n_active=n_active, gr_rev=gr_rev)    
     
     def weight_node_to_graph(
-        graph, node, ext_gr, is_source, radius=None, attribute=None, active=None):
+        graph, node, ext_gr, is_source, radius=None, attribute=None, active=None, gr_rev=None):
         """see `algorithms.weight_node_to_graph`"""
         return weight_node_to_graph(graph, node, ext_gr, is_source, radius=radius, 
-                                    attribute=attribute, active=active)
+                                    attribute=attribute, active=active, gr_rev=gr_rev)
 
     def clean_attributes(self, nodes=True, edges=True):
         """remove attributes with None value
