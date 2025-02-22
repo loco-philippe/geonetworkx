@@ -74,9 +74,9 @@ class GeoGr(ABC):
                              n_attribute=n_attribute, n_active=n_active)    
     
     def weight_node_to_graph(
-        graph, node, ext_gr, radius=None, attribute=None, active=None):
+        graph, node, ext_gr, is_source, radius=None, attribute=None, active=None):
         """see `algorithms.weight_node_to_graph`"""
-        return weight_node_to_graph(graph, node, ext_gr, radius=radius, 
+        return weight_node_to_graph(graph, node, ext_gr, is_source, radius=radius, 
                                     attribute=attribute, active=active)
 
     def clean_attributes(self, nodes=True, edges=True):
